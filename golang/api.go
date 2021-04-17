@@ -1,25 +1,17 @@
 package mux
 
-import (
-	"context"
-	"net"
-)
+import "context"
 
 type Session interface {
-	Context() context.Context
 	Close() error
-	Open() (Channel, error)
+	Open(ctx context.Context) (Channel, error)
 	Accept() (Channel, error)
-	LocalAddr() net.Addr
-	RemoteAddr() net.Addr
 	Wait() error
 }
 
 // A Channel is an ordered, reliable, flow-controlled, duplex stream
 // that is multiplexed over a qmux connection.
 type Channel interface {
-	Context() context.Context
-
 	// Read reads up to len(data) bytes from the channel.
 	Read(data []byte) (int, error)
 
@@ -30,15 +22,9 @@ type Channel interface {
 	// call.
 	Close() error
 
-	// CloseWrite signals the end of sending in-band
-	// data. The other side may still send data
+	// CloseWrite signals the end of sending data.
+	// The other side may still send data
 	CloseWrite() error
 
 	ID() uint32
-}
-
-type Listener interface {
-	Close() error
-	Addr() net.Addr
-	Accept() (Session, error)
 }

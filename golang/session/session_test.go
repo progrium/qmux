@@ -26,9 +26,9 @@ func TestQmux(t *testing.T) {
 		fatal(err, t)
 		defer conn.Close()
 
-		sess := New(context.Background(), conn)
+		sess := New(conn)
 
-		ch, err := sess.Open()
+		ch, err := sess.Open(context.Background())
 		fatal(err, t)
 		b, err := ioutil.ReadAll(ch)
 		fatal(err, t)
@@ -48,7 +48,7 @@ func TestQmux(t *testing.T) {
 	fatal(err, t)
 	defer conn.Close()
 
-	sess := New(context.Background(), conn)
+	sess := New(conn)
 
 	var ch mux.Channel
 	t.Run("session accept", func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestQmux(t *testing.T) {
 	})
 
 	t.Run("session open", func(t *testing.T) {
-		ch, err = sess.Open()
+		ch, err = sess.Open(context.Background())
 		fatal(err, t)
 	})
 

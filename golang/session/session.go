@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net"
 	"sync"
 
 	mux "github.com/progrium/qmux/golang"
@@ -29,7 +28,6 @@ const (
 )
 
 type session struct {
-	ctx      context.Context
 	conn     io.ReadWriteCloser
 	chanList chanList
 
@@ -44,12 +42,11 @@ type session struct {
 }
 
 // NewSession returns a session that runs over the given connection.
-func New(ctx context.Context, rwc io.ReadWriteCloser) mux.Session {
+func New(rwc io.ReadWriteCloser) mux.Session {
 	if rwc == nil {
 		return nil
 	}
 	s := &session{
-		ctx:              ctx,
 		conn:             rwc,
 		enc:              codec.NewEncoder(rwc),
 		dec:              codec.NewDecoder(rwc),
@@ -61,26 +58,8 @@ func New(ctx context.Context, rwc io.ReadWriteCloser) mux.Session {
 	return s
 }
 
-func (s *session) Context() context.Context {
-	return s.ctx
-}
-
 func (s *session) Close() error {
 	s.conn.Close()
-	return nil
-}
-
-func (s *session) LocalAddr() net.Addr {
-	if conn, ok := s.conn.(net.Conn); ok {
-		return conn.LocalAddr()
-	}
-	return nil
-}
-
-func (s *session) RemoteAddr() net.Addr {
-	if conn, ok := s.conn.(net.Conn); ok {
-		return conn.RemoteAddr()
-	}
 	return nil
 }
 
@@ -94,7 +73,6 @@ func (s *session) Wait() error {
 }
 
 func (s *session) Accept() (mux.Channel, error) {
-	// TODO: context cancel
 	select {
 	case ch := <-s.incomingChannels:
 		return ch, nil
@@ -103,7 +81,7 @@ func (s *session) Accept() (mux.Channel, error) {
 	}
 }
 
-func (s *session) Open() (mux.Channel, error) {
+func (s *session) Open(ctx context.Context) (mux.Channel, error) {
 	ch := s.newChannel(channelOutbound)
 	ch.maxIncomingPayload = channelMaxPacket
 
@@ -115,18 +93,22 @@ func (s *session) Open() (mux.Channel, error) {
 		return nil, err
 	}
 
-	// TODO: timeout? context cancel?
-	m := <-ch.msg
-	if m == nil {
-		return nil, fmt.Errorf("qmux: channel closed early during open")
+	var m codec.Message
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case m = <-ch.msg:
+		if m == nil {
+			return nil, fmt.Errorf("qmux: channel closed early during open")
+		}
 	}
+
 	switch msg := m.(type) {
 	case *codec.OpenConfirmMessage:
 		return ch, nil
-
 	case *codec.OpenFailureMessage:
 		return nil, fmt.Errorf("qmux: channel open failed on remote side")
-
 	default:
 		return nil, fmt.Errorf("qmux: unexpected packet in response to channel open: %v", msg)
 	}
@@ -134,7 +116,6 @@ func (s *session) Open() (mux.Channel, error) {
 
 func (s *session) newChannel(direction channelDirection) *channel {
 	ch := &channel{
-		ctx:       s.ctx,
 		remoteWin: window{Cond: sync.NewCond(new(sync.Mutex))},
 		myWindow:  channelWindowSize,
 		pending:   newBuffer(),

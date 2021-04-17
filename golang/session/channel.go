@@ -1,7 +1,6 @@
 package session
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -20,7 +19,6 @@ const (
 // channel is an implementation of the Channel interface that works
 // with the session class.
 type channel struct {
-	ctx context.Context
 
 	// R/O after creation
 	localId, remoteId uint32
@@ -64,10 +62,6 @@ type channel struct {
 
 func (ch *channel) ID() uint32 {
 	return ch.localId
-}
-
-func (ch *channel) Context() context.Context {
-	return ch.ctx
 }
 
 func (ch *channel) CloseWrite() error {
