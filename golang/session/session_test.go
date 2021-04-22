@@ -12,6 +12,7 @@ import (
 )
 
 func fatal(err error, t *testing.T) {
+	t.Helper()
 	if err != nil {
 		t.Fatal(err)
 	}
