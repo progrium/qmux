@@ -47,10 +47,16 @@ func testExchange(t *testing.T, sess mux.Session) {
 	if !bytes.Equal(b, []byte("Hello world")) {
 		t.Fatalf("unexpected bytes: %s", b)
 	}
+
+	t.Run("session close", func(t *testing.T) {
+		err = sess.Close()
+		fatal(err, t)
+	})
 }
 
 func startListener(t *testing.T, l Listener) {
 	t.Helper()
+
 	t.Cleanup(func() {
 		fatal(l.Close(), t)
 	})
@@ -58,6 +64,18 @@ func startListener(t *testing.T, l Listener) {
 	go func() {
 		sess, err := l.Accept()
 		fatal(err, t)
+		t.Cleanup(func() {
+			// Synchronizes cleanup, waiting for the client to disconnect before
+			// closing the stream. This prevents errors in the Pipe-based test with
+			// closing one end of the pipe before the other has read the data.
+			// Registering as a test cleanup function also avoids a race condition
+			// with the test existing before closing the session.
+			if err := mux.Wait(sess); err != io.EOF {
+				t.Errorf("Wait returned unexpected error: %v", err)
+			}
+			err = sess.Close()
+			fatal(err, t)
+		})
 
 		ch, err := sess.Open(context.Background())
 		fatal(err, t)
@@ -69,9 +87,6 @@ func startListener(t *testing.T, l Listener) {
 		_, err = ch.Write(b)
 		fatal(err, t)
 		err = ch.CloseWrite()
-		fatal(err, t)
-
-		err = sess.Close()
 		fatal(err, t)
 	}()
 }
