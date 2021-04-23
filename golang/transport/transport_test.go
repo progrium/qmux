@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"path"
 	"testing"
 
 	mux "github.com/progrium/qmux/golang"
@@ -97,6 +98,18 @@ func TestTCP(t *testing.T) {
 	startListener(t, l)
 
 	sess, err := DialTCP(l.Addr().String())
+	fatal(err, t)
+	testExchange(t, sess)
+}
+
+func TestUnix(t *testing.T) {
+	tmp := t.TempDir()
+	sockPath := path.Join(tmp, "qmux.sock")
+	l, err := ListenUnix(sockPath)
+	fatal(err, t)
+	startListener(t, l)
+
+	sess, err := DialUnix(sockPath)
 	fatal(err, t)
 	testExchange(t, sess)
 }
