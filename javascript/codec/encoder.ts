@@ -32,9 +32,9 @@ export function Marshal(obj: msg.AnyMessage): Uint8Array {
         data.setUint8(0, m.ID);
         data.setUint32(1, m.channelID);
         data.setUint32(5, m.length);
-        let buf = new Uint8Array(9+m.length);
-		buf.set(new Uint8Array(data.buffer), 0);
-		buf.set(m.data, 9);
+        let buf = new Uint8Array(9 + m.length);
+        buf.set(new Uint8Array(data.buffer), 0);
+        buf.set(m.data, 9);
         return buf;
     }
     if (obj.ID === msg.EofID) {
@@ -50,7 +50,7 @@ export function Marshal(obj: msg.AnyMessage): Uint8Array {
         data.setUint8(0, m.ID);
         data.setUint32(1, m.senderID);
         data.setUint32(5, m.windowSize);
-		data.setUint32(9, m.maxPacketSize);
+        data.setUint32(9, m.maxPacketSize);
         return new Uint8Array(data.buffer);
     }
     if (obj.ID === msg.OpenConfirmID) {
@@ -59,8 +59,8 @@ export function Marshal(obj: msg.AnyMessage): Uint8Array {
         data.setUint8(0, m.ID);
         data.setUint32(1, m.channelID);
         data.setUint32(5, m.senderID);
-		data.setUint32(9, m.windowSize);
-		data.setUint32(13, m.maxPacketSize);
+        data.setUint32(9, m.windowSize);
+        data.setUint32(13, m.maxPacketSize);
         return new Uint8Array(data.buffer);
     }
     if (obj.ID === msg.OpenFailureID) {

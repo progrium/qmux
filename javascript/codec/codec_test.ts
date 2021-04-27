@@ -10,6 +10,5 @@ Deno.test("hello world #1", () => {
     let obj = codec.Decode(packet);
     let buf = codec.Encode(obj);
     console.log("Hello", obj, buf);
-    
+
 });
-  
