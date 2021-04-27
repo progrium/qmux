@@ -1,5 +1,8 @@
+// @ts-ignore
 import * as api from "./../api.ts";
+// @ts-ignore
 import * as internal from "./../internal.ts";
+// @ts-ignore
 import * as util from "./../util.ts";
 
 export function Dial(addr: string, debug: boolean = false, onclose?: () => void): Promise<api.ISession> {

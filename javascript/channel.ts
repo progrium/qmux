@@ -1,6 +1,8 @@
-
+// @ts-ignore
 import * as util from "./util.ts";
+// @ts-ignore
 import * as codec from "./codec/index.ts";
+// @ts-ignore
 import * as internal from "./internal.ts";
 
 export const channelMaxPacket = 1 << 15;

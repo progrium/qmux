@@ -1,6 +1,10 @@
+// @ts-ignore
 import * as api from "./api.ts";
+// @ts-ignore
 import * as codec from "./codec/index.ts";
+// @ts-ignore
 import * as util from "./util.ts";
+// @ts-ignore
 import * as internal from "./internal.ts";
 
 export const minPacketLength = 9;

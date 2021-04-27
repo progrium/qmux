@@ -2,6 +2,7 @@ import {
     assertEquals,
 } from "https://deno.land/std/testing/asserts.ts";
 
+// @ts-ignore
 import * as codec from "./index.ts";
 
 Deno.test("hello world #1", () => {

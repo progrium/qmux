@@ -1,5 +1,8 @@
+// @ts-ignore
 import * as msg from "./message.ts";
+// @ts-ignore
 import * as api from "../api.ts";
+// @ts-ignore
 import * as util from "../util.ts";
 
 export class Decoder {
