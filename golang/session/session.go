@@ -27,43 +27,47 @@ const (
 	chanSize = 16
 )
 
-type session struct {
-	conn     io.ReadWriteCloser
-	chanList chanList
+// Session is a bi-directional channel muxing session on a given transport.
+type Session struct {
+	t     mux.Transport
+	chans chanList
 
 	enc *codec.Encoder
 	dec *codec.Decoder
 
-	incomingChannels chan mux.Channel
+	inbox chan mux.Channel
 
 	errCond *sync.Cond
 	err     error
 	closeCh chan bool
 }
 
-// NewSession returns a session that runs over the given connection.
-func New(rwc io.ReadWriteCloser) mux.Session {
-	if rwc == nil {
+// NewSession returns a session that runs over the given transport.
+func New(t mux.Transport) *Session {
+	if t == nil {
 		return nil
 	}
-	s := &session{
-		conn:             rwc,
-		enc:              codec.NewEncoder(rwc),
-		dec:              codec.NewDecoder(rwc),
-		incomingChannels: make(chan mux.Channel, chanSize),
-		errCond:          sync.NewCond(new(sync.Mutex)),
-		closeCh:          make(chan bool, 1),
+	s := &Session{
+		t:       t,
+		enc:     codec.NewEncoder(t),
+		dec:     codec.NewDecoder(t),
+		inbox:   make(chan mux.Channel, chanSize),
+		errCond: sync.NewCond(new(sync.Mutex)),
+		closeCh: make(chan bool, 1),
 	}
 	go s.loop()
 	return s
 }
 
-func (s *session) Close() error {
-	s.conn.Close()
+// Close closes the underlying transport.
+func (s *Session) Close() error {
+	s.t.Close()
 	return nil
 }
 
-func (s *session) Wait() error {
+// Wait blocks until the transport has shut down, and returns the
+// error causing the shutdown.
+func (s *Session) Wait() error {
 	s.errCond.L.Lock()
 	defer s.errCond.L.Unlock()
 	for s.err == nil {
@@ -72,16 +76,18 @@ func (s *session) Wait() error {
 	return s.err
 }
 
-func (s *session) Accept() (mux.Channel, error) {
+// Accept waits for and returns the next incoming channel.
+func (s *Session) Accept() (mux.Channel, error) {
 	select {
-	case ch := <-s.incomingChannels:
+	case ch := <-s.inbox:
 		return ch, nil
 	case <-s.closeCh:
 		return nil, io.EOF
 	}
 }
 
-func (s *session) Open(ctx context.Context) (mux.Channel, error) {
+// Open establishes a new channel with the other end.
+func (s *Session) Open(ctx context.Context) (mux.Channel, error) {
 	ch := s.newChannel(channelOutbound)
 	ch.maxIncomingPayload = channelMaxPacket
 
@@ -114,8 +120,8 @@ func (s *session) Open(ctx context.Context) (mux.Channel, error) {
 	}
 }
 
-func (s *session) newChannel(direction channelDirection) *channel {
-	ch := &channel{
+func (s *Session) newChannel(direction channelDirection) *Channel {
+	ch := &Channel{
 		remoteWin: window{Cond: sync.NewCond(new(sync.Mutex))},
 		myWindow:  channelWindowSize,
 		pending:   newBuffer(),
@@ -124,23 +130,23 @@ func (s *session) newChannel(direction channelDirection) *channel {
 		session:   s,
 		packetBuf: make([]byte, 0),
 	}
-	ch.localId = s.chanList.add(ch)
+	ch.localId = s.chans.add(ch)
 	return ch
 }
 
 // loop runs the connection machine. It will process packets until an
 // error is encountered. To synchronize on loop exit, use session.Wait.
-func (s *session) loop() {
+func (s *Session) loop() {
 	var err error
 	for err == nil {
 		err = s.onePacket()
 	}
 
-	for _, ch := range s.chanList.dropAll() {
+	for _, ch := range s.chans.dropAll() {
 		ch.close()
 	}
 
-	s.conn.Close()
+	s.t.Close()
 	s.closeCh <- true
 
 	s.errCond.L.Lock()
@@ -150,7 +156,7 @@ func (s *session) loop() {
 }
 
 // onePacket reads and processes one packet.
-func (s *session) onePacket() error {
+func (s *Session) onePacket() error {
 	var err error
 	var msg codec.Message
 
@@ -164,7 +170,7 @@ func (s *session) onePacket() error {
 		return s.handleOpen(msg.(*codec.OpenMessage))
 	}
 
-	ch := s.chanList.getChan(id)
+	ch := s.chans.getChan(id)
 	if ch == nil {
 		return fmt.Errorf("qmux: invalid channel %d", id)
 	}
@@ -173,7 +179,7 @@ func (s *session) onePacket() error {
 }
 
 // handleChannelOpen schedules a channel to be Accept()ed.
-func (s *session) handleOpen(msg *codec.OpenMessage) error {
+func (s *Session) handleOpen(msg *codec.OpenMessage) error {
 	if msg.MaxPacketSize < minPacketLength || msg.MaxPacketSize > maxPacketLength {
 		return s.enc.Encode(codec.OpenFailureMessage{
 			ChannelID: msg.SenderID,
@@ -185,7 +191,7 @@ func (s *session) handleOpen(msg *codec.OpenMessage) error {
 	c.maxRemotePayload = msg.MaxPacketSize
 	c.remoteWin.add(msg.WindowSize)
 	c.maxIncomingPayload = channelMaxPacket
-	s.incomingChannels <- c
+	s.inbox <- c
 
 	return s.enc.Encode(codec.OpenConfirmMessage{
 		ChannelID:     c.remoteId,

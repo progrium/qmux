@@ -16,9 +16,9 @@ const (
 	channelOutbound
 )
 
-// channel is an implementation of the Channel interface that works
-// with the session class.
-type channel struct {
+// Channel is an implementation of the Channel interface that works
+// with the Session class.
+type Channel struct {
 
 	// R/O after creation
 	localId, remoteId uint32
@@ -30,7 +30,7 @@ type channel struct {
 	maxIncomingPayload uint32
 	maxRemotePayload   uint32
 
-	session *session
+	session *Session
 
 	// direction contains either channelOutbound, for channels created
 	// locally, or channelInbound, for channels created by the peer.
@@ -60,23 +60,29 @@ type channel struct {
 	packetBuf []byte
 }
 
-func (ch *channel) ID() uint32 {
+// ID returns the unique identifier of this channel
+// within the session
+func (ch *Channel) ID() uint32 {
 	return ch.localId
 }
 
-func (ch *channel) CloseWrite() error {
+// CloseWrite signals the end of sending data.
+// The other side may still send data
+func (ch *Channel) CloseWrite() error {
 	ch.sentEOF = true
 	return ch.send(codec.EOFMessage{
 		ChannelID: ch.remoteId})
 }
 
-func (ch *channel) Close() error {
+// Close signals end of channel use. No data may be sent after this
+// call.
+func (ch *Channel) Close() error {
 	return ch.send(codec.CloseMessage{
 		ChannelID: ch.remoteId})
 }
 
 // Write writes len(data) bytes to the channel.
-func (ch *channel) Write(data []byte) (n int, err error) {
+func (ch *Channel) Write(data []byte) (n int, err error) {
 	if ch.sentEOF {
 		return 0, io.EOF
 	}
@@ -105,7 +111,7 @@ func (ch *channel) Write(data []byte) (n int, err error) {
 }
 
 // Read reads up to len(data) bytes from the channel.
-func (c *channel) Read(data []byte) (n int, err error) {
+func (c *Channel) Read(data []byte) (n int, err error) {
 	n, err = c.pending.Read(data)
 
 	if n > 0 {
@@ -123,7 +129,7 @@ func (c *channel) Read(data []byte) (n int, err error) {
 
 // writePacket sends a packet. If the packet is a channel close, it updates
 // sentClose. This method takes the lock c.writeMu.
-func (ch *channel) send(msg interface{}) error {
+func (ch *Channel) send(msg interface{}) error {
 	ch.writeMu.Lock()
 	defer ch.writeMu.Unlock()
 
@@ -138,7 +144,7 @@ func (ch *channel) send(msg interface{}) error {
 	return ch.session.enc.Encode(msg)
 }
 
-func (c *channel) adjustWindow(n uint32) error {
+func (c *Channel) adjustWindow(n uint32) error {
 	c.windowMu.Lock()
 	// Since myWindow is managed on our side, and can never exceed
 	// the initial window setting, we don't worry about overflow.
@@ -150,7 +156,7 @@ func (c *channel) adjustWindow(n uint32) error {
 	})
 }
 
-func (c *channel) close() {
+func (c *Channel) close() {
 	c.pending.eof()
 	close(c.msg)
 	c.writeMu.Lock()
@@ -165,14 +171,14 @@ func (c *channel) close() {
 // responseMessageReceived is called when a success or failure message is
 // received on a channel to check that such a message is reasonable for the
 // given channel.
-func (ch *channel) responseMessageReceived() error {
+func (ch *Channel) responseMessageReceived() error {
 	if ch.direction == channelInbound {
 		return errors.New("qmux: channel response message received on inbound channel")
 	}
 	return nil
 }
 
-func (ch *channel) handle(msg codec.Message) error {
+func (ch *Channel) handle(msg codec.Message) error {
 	switch m := msg.(type) {
 	case *codec.DataMessage:
 		return ch.handleData(m)
@@ -181,7 +187,7 @@ func (ch *channel) handle(msg codec.Message) error {
 		ch.send(codec.CloseMessage{
 			ChannelID: ch.remoteId,
 		})
-		ch.session.chanList.remove(ch.localId)
+		ch.session.chans.remove(ch.localId)
 		ch.close()
 		return nil
 
@@ -212,7 +218,7 @@ func (ch *channel) handle(msg codec.Message) error {
 		if err := ch.responseMessageReceived(); err != nil {
 			return err
 		}
-		ch.session.chanList.remove(m.ChannelID)
+		ch.session.chans.remove(m.ChannelID)
 		ch.msg <- m
 		return nil
 
@@ -221,7 +227,7 @@ func (ch *channel) handle(msg codec.Message) error {
 	}
 }
 
-func (ch *channel) handleData(msg *codec.DataMessage) error {
+func (ch *Channel) handleData(msg *codec.DataMessage) error {
 	if msg.Length > ch.maxIncomingPayload {
 		// TODO(hanwen): should send Disconnect?
 		return errors.New("qmux: incoming packet exceeds maximum payload size")
