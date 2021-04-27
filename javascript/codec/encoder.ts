@@ -1,4 +1,6 @@
+// @ts-ignore
 import * as api from "../api.ts";
+// @ts-ignore
 import * as msg from "./message.ts";
 
 export class Encoder {
