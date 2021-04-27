@@ -2,9 +2,12 @@ package codec
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"sync"
+	"syscall"
 )
 
 type Decoder struct {
@@ -32,6 +35,10 @@ func readPacket(c io.Reader) ([]byte, error) {
 	msgNum := make([]byte, 1)
 	_, err := c.Read(msgNum)
 	if err != nil {
+		var syscallErr *os.SyscallError
+		if errors.As(err, &syscallErr) && syscallErr.Err == syscall.ECONNRESET {
+			return nil, io.EOF
+		}
 		return nil, err
 	}
 
