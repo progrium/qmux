@@ -9,11 +9,11 @@ type chanList struct {
 
 	// chans are indexed by the local id of the channel, which the
 	// other side should send in the PeersId field.
-	chans []*channel
+	chans []*Channel
 }
 
 // Assigns a channel ID to the given channel.
-func (c *chanList) add(ch *channel) uint32 {
+func (c *chanList) add(ch *Channel) uint32 {
 	c.Lock()
 	defer c.Unlock()
 	for i := range c.chans {
@@ -27,7 +27,7 @@ func (c *chanList) add(ch *channel) uint32 {
 }
 
 // getChan returns the channel for the given ID.
-func (c *chanList) getChan(id uint32) *channel {
+func (c *chanList) getChan(id uint32) *Channel {
 	c.Lock()
 	defer c.Unlock()
 	if id < uint32(len(c.chans)) {
@@ -45,10 +45,10 @@ func (c *chanList) remove(id uint32) {
 }
 
 // dropAll forgets all channels it knows, returning them in a slice.
-func (c *chanList) dropAll() []*channel {
+func (c *chanList) dropAll() []*Channel {
 	c.Lock()
 	defer c.Unlock()
-	var r []*channel
+	var r []*Channel
 
 	for _, ch := range c.chans {
 		if ch == nil {
