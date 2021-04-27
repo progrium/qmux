@@ -42,7 +42,8 @@ func testExchange(t *testing.T, sess mux.Session) {
 	t.Run("channel read", func(t *testing.T) {
 		b, err = ioutil.ReadAll(ch)
 		fatal(err, t)
-		ch.Close() // should already be closed by other end
+		err = ch.Close()
+		fatal(err, t)
 	})
 
 	if !bytes.Equal(b, []byte("Hello world")) {
@@ -70,7 +71,7 @@ func startListener(t *testing.T, l Listener) {
 			// closing the stream. This prevents errors in the Pipe-based test with
 			// closing one end of the pipe before the other has read the data.
 			// Registering as a test cleanup function also avoids a race condition
-			// with the test existing before closing the session.
+			// with the test exiting before closing the session.
 			if err := mux.Wait(sess); err != io.EOF {
 				t.Errorf("Wait returned unexpected error: %v", err)
 			}
@@ -82,7 +83,7 @@ func startListener(t *testing.T, l Listener) {
 		fatal(err, t)
 		b, err := ioutil.ReadAll(ch)
 		fatal(err, t)
-		ch.Close() // should already be closed by other end
+		ch.Close()
 
 		ch, err = sess.Accept()
 		_, err = ch.Write(b)
