@@ -118,7 +118,7 @@ func TestSessionWait(t *testing.T) {
 	sess := New(conn)
 	fatal(sess.Close(), t)
 	// wait should return immediately since the connection was closed
-	err = sess.Wait()
+	err = mux.Wait(sess)
 	var netErr net.Error
 	if !errors.As(err, &netErr) {
 		t.Fatalf("expected a network error, but got: %v", err)
