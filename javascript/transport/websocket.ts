@@ -26,7 +26,7 @@ export class Conn implements api.IConn {
         this.socket.binaryType = "arraybuffer";
         this.socket.onmessage = (event) => {
             var buf = new Uint8Array(event.data);
-            this.buf = util.concat([this.buf, buf], this.buf.length+buf.length);
+            this.buf = util.concat([this.buf, buf], this.buf.length + buf.length);
             if (this.waiters.length > 0) {
                 let waiter = this.waiters.shift();
                 if (waiter) waiter();
@@ -39,8 +39,8 @@ export class Conn implements api.IConn {
         }
         //this.socket.onerror = (err) => console.error("qtalk", err);
     }
- 
-    read(len: number): Promise<Uint8Array|undefined> {
+
+    read(len: number): Promise<Uint8Array | undefined> {
         return new Promise((resolve) => {
             var tryRead = () => {
                 if (this.isClosed) {
@@ -64,7 +64,7 @@ export class Conn implements api.IConn {
         return Promise.resolve(buffer.byteLength);
     }
 
-	close(): Promise<void> {
+    close(): Promise<void> {
         if (this.isClosed) return Promise.resolve();
         return new Promise((resolve) => {
             this.isClosed = true;
