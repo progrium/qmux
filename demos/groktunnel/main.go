@@ -34,8 +34,7 @@ func main() {
 		req.Host = "_new." + net.JoinHostPort(*host, *port)
 		fatal(err)
 		client.Write(req)
-		resp, err := client.Read(req)
-		fatal(err)
+		resp, _ := client.Read(req)
 		fmt.Printf("port %s http available at:\nhttp://%s\n", flag.Arg(0), resp.Header.Get("X-Public-Host"))
 		c, _ := client.Hijack()
 		sess := session.New(c)
@@ -91,7 +90,7 @@ func main() {
 		srv.Serve(ml)
 	}()
 
-	log.Println("groktunnel server ready!")
+	log.Printf("groktunnel server [%s] ready!\n", *host)
 	for {
 		conn, err := vmux.NextError()
 		fmt.Println(err)
