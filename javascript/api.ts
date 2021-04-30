@@ -7,7 +7,7 @@ export interface IConn {
 
 export interface ISession {
     open(): Promise<IChannel>;
-    accept(): Promise<IChannel>;
+    accept(): Promise<IChannel | undefined>;
     close(): Promise<void>;
 }
 

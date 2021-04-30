@@ -14,7 +14,7 @@ export const maxPacketLength = Number.MAX_VALUE;
 export class Session implements api.ISession {
     conn: api.IConn;
     channels: Array<internal.Channel>;
-    incoming: util.queue;
+    incoming: util.queue<api.IChannel>;
     enc: codec.Encoder;
     dec: codec.Decoder;
 
@@ -42,11 +42,11 @@ export class Session implements api.ISession {
         throw "failed to open";
     }
 
-    accept(): Promise<api.IChannel> {
+    accept(): Promise<api.IChannel | undefined> {
         return this.incoming.shift();
     }
 
-    async close(): Promise<void> {
+    close(): Promise<void> {
         for (const ids of Object.keys(this.channels)) {
             let id = parseInt(ids);
             if (this.channels[id] !== undefined) {

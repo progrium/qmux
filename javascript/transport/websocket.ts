@@ -17,7 +17,7 @@ export function Dial(addr: string, debug: boolean = false, onclose?: () => void)
 export class Conn implements api.IConn {
     socket: WebSocket
     error: any
-    waiters: Array<Function>
+    waiters: Array<() => void>
     buf: Uint8Array;
     isClosed: boolean
 
