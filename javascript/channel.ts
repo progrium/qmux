@@ -15,14 +15,14 @@ export class Channel {
     maxIncomingPayload: number;
     maxRemotePayload: number;
     session: internal.Session;
-    ready: util.queue;
+    ready: util.queue<boolean>;
     sentEOF: boolean;
     gotEOF: boolean;
     sentClose: boolean;
     remoteWin: number;
     myWindow: number;
     readBuf: Uint8Array | undefined;
-    readers: Array<Function>;
+    readers: Array<() => void>;
 
     constructor(sess: internal.Session) {
         this.localId = 0;

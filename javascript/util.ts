@@ -11,9 +11,9 @@ export function concat(list: Uint8Array[], totalLength: number): Uint8Array {
 
 // queue primitive for incoming connections and
 // signaling channel ready state
-export class queue {
-    q: Array<any>
-    waiters: Array<Function>
+export class queue<ValueType> {
+    q: Array<ValueType>
+    waiters: Array<(a: ValueType | undefined) => void>
     closed: boolean
 
     constructor() {
@@ -22,7 +22,7 @@ export class queue {
         this.closed = false;
     }
 
-    push(obj: any) {
+    push(obj: ValueType) {
         if (this.closed) throw "closed queue";
         if (this.waiters.length > 0) {
             let waiter = this.waiters.shift()
@@ -32,7 +32,7 @@ export class queue {
         this.q.push(obj);
     }
 
-    shift(): Promise<any> {
+    shift(): Promise<ValueType | undefined> {
         if (this.closed) return Promise.resolve(undefined);
         return new Promise(resolve => {
             if (this.q.length > 0) {
