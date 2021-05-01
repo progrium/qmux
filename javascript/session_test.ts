@@ -49,7 +49,6 @@ async function readAll(conn: api.IConn): Promise<Uint8Array> {
     let buff = new Uint8Array();
     while (true) {
         let next = await conn.read(100);
-        console.log("readAll got", next)
         if (next === undefined) {
             return buff;
         }
@@ -60,26 +59,18 @@ async function readAll(conn: api.IConn): Promise<Uint8Array> {
 async function startListener(conn: api.IConn) {
     let sess = new session.Session(conn);
     let ch = await sess.open();
-    console.log("1 opened")
     let b = await readAll(ch);
-    console.log("1 readAll")
     await ch.close();
-    console.log("1 closed")
 
     let ch2 = await sess.accept();
-    console.log("1 accepted")
     if (ch2 === undefined) {
         throw new Error("accept failed")
     }
     await ch2.write(b);
-    console.log("1 wrote")
     await ch2.closeWrite();
-    console.log("1 closed")
     try {
         await sess.close();
-        console.log("1 sess.close")
         await sess.done;
-        console.log("1 sess.done")
     } catch (e) {
         console.log(e);
     }
@@ -88,32 +79,23 @@ async function startListener(conn: api.IConn) {
 async function testExchange(conn: api.IConn) {
     let sess = new session.Session(conn);
     let ch = await sess.accept();
-    console.log("2 accepted")
     if (ch === undefined) {
         throw new Error("accept failed")
     }
 
     await ch.write(new TextEncoder().encode("Hello world"));
-    console.log("2 wrote")
     await ch.closeWrite();
-    console.log("2 closewrite")
     await ch.close();
-    console.log("2 closed")
 
     let ch2 = await sess.open();
-    console.log("2 opened")
     let b = await readAll(ch2);
-    console.log("2 readAll")
     await ch2.close();
-    console.log("2 closed")
 
     assertEquals(new TextEncoder().encode("Hello world"), b);
     try {
         // XXX this produces BadResourceID when the underlying socket is closed?
         await sess.close();
-        console.log("2 sess.close")
         await sess.done;
-        console.log("2 sess.done")
     } catch (e) {
         console.log(e);
     }
@@ -121,7 +103,6 @@ async function testExchange(conn: api.IConn) {
 
 Deno.test("tcp", async () => {
     let listener = Deno.listen({ port: 0 });
-    console.log(listener.addr);
 
     let port = (listener.addr as Deno.NetAddr).port;
 

@@ -55,13 +55,11 @@ export class Channel {
                     this.readBuf = this.readBuf.slice(len);
                     resolve(data);
                     if (this.readBuf.length == 0 && this.gotEOF) {
-                        console.log("gotEOF, setting to undefined");
                         this.readBuf = undefined;
                     }
                     return;
                 }
                 if (this.gotEOF) {
-                    console.log("gotEOF, resolving rest of data");
                     // TODO what if length == 0, return undefined then too?
                     let data = this.readBuf;
                     this.readBuf = undefined;
@@ -131,7 +129,6 @@ export class Channel {
     }
 
     handle(msg: codec.ChannelMessage): void {
-        console.log(msg);
         if (msg.ID === codec.DataID) {
             this.handleData(msg as codec.DataMessage);
             return;
