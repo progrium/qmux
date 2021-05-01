@@ -17,6 +17,7 @@ export class Session implements api.ISession {
     incoming: util.queue<api.IChannel>;
     enc: codec.Encoder;
     dec: codec.Decoder;
+    done: Promise<void>;
 
     constructor(conn: api.IConn, debug: boolean = false) {
         this.conn = conn;
@@ -24,7 +25,7 @@ export class Session implements api.ISession {
         this.dec = new codec.Decoder(conn, debug);
         this.channels = [];
         this.incoming = new util.queue();
-        this.loop();
+        this.done = this.loop();
     }
 
     async open(): Promise<api.IChannel> {

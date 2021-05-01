@@ -55,8 +55,17 @@ export class Channel {
                     this.readBuf = this.readBuf.slice(len);
                     resolve(data);
                     if (this.readBuf.length == 0 && this.gotEOF) {
+                        console.log("gotEOF, setting to undefined");
                         this.readBuf = undefined;
                     }
+                    return;
+                }
+                if (this.gotEOF) {
+                    console.log("gotEOF, resolving rest of data");
+                    // TODO what if length == 0, return undefined then too?
+                    let data = this.readBuf;
+                    this.readBuf = undefined;
+                    resolve(data);
                     return;
                 }
                 this.readers.push(tryRead);
@@ -122,6 +131,7 @@ export class Channel {
     }
 
     handle(msg: codec.ChannelMessage): void {
+        console.log(msg);
         if (msg.ID === codec.DataID) {
             this.handleData(msg as codec.DataMessage);
             return;
@@ -132,10 +142,15 @@ export class Channel {
         }
         if (msg.ID === codec.EofID) {
             this.gotEOF = true;
-            // if (this.readers.length > 0) {
-            // 	this.readers.shift()();
-            // }
-            return;
+            // TODO does this block if there are a lot of readers pending?
+            // is there a better way to interleave those?
+            while (true) {
+                let reader = this.readers.shift();
+                if (reader === undefined) {
+                    return;
+                }
+                reader();
+            }
         }
         if (msg.ID === codec.OpenFailureID) {
             this.session.rmCh(msg.channelID);
