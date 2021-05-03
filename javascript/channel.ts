@@ -50,23 +50,23 @@ export class Channel {
                     resolve(undefined);
                     return;
                 }
-                if (this.readBuf.length >= len) {
-                    let data = this.readBuf.slice(0, len);
-                    this.readBuf = this.readBuf.slice(len);
-                    resolve(data);
-                    if (this.readBuf.length == 0 && this.gotEOF) {
+                if (this.readBuf.length == 0) {
+                    if (this.gotEOF) {
                         this.readBuf = undefined;
+                        resolve(undefined);
+                        return;
                     }
+                    // TODO should these be served in-order? This will re-queue at
+                    // the end, but is that an issue?
+                    this.readers.push(tryRead);
                     return;
                 }
-                if (this.gotEOF) {
-                    // TODO what if length == 0, return undefined then too?
-                    let data = this.readBuf;
+                let data = this.readBuf.slice(0, len);
+                this.readBuf = this.readBuf.slice(data.byteLength);
+                if (this.readBuf.length == 0 && this.gotEOF) {
                     this.readBuf = undefined;
-                    resolve(data);
-                    return;
                 }
-                this.readers.push(tryRead);
+                resolve(data);
             }
             tryRead();
         });
