@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	mux "github.com/progrium/qmux/golang"
 	"github.com/progrium/qmux/golang/codec"
+	"github.com/progrium/qmux/golang/mux"
 )
 
 const (
