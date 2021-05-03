@@ -43,10 +43,6 @@ class Conn implements api.IConn {
     }
 
     close(): Promise<void> {
-        // XXX this errors with:
-        // BadResource: Bad resource ID if the connection was already closed
-        // because the other end disconnected. Should we catch it here, or
-        // let that error bubble up?
         try {
             this.conn.close();
         } catch (e) {
