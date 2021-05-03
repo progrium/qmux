@@ -23,6 +23,7 @@ export class Channel {
     myWindow: number;
     readBuf: Uint8Array | undefined;
     readers: Array<() => void>;
+    writers: Array<() => void>;
 
     constructor(sess: internal.Session) {
         this.localId = 0;
@@ -37,6 +38,7 @@ export class Channel {
         this.ready = new util.queue();
         this.session = sess;
         this.readers = [];
+        this.writers = [];
     }
 
     ident(): number {
@@ -64,24 +66,78 @@ export class Channel {
                 if (this.readBuf.length == 0 && this.gotEOF) {
                     this.readBuf = undefined;
                 }
-                resolve(data);
+                this.adjustWindow(data.byteLength).then(() => {
+                    resolve(data);
+                }).catch((e) => {
+                    if (e !== "EOF") {
+                        throw e;
+                    }
+                    resolve(data);
+                });
             }
             tryRead();
         });
+    }
+
+    reserveWindow(win: number): number {
+        if (this.remoteWin < win) {
+            win = this.remoteWin;
+        }
+        this.remoteWin -= win;
+        return win;
+    }
+
+    addWindow(win: number) {
+        this.remoteWin += win;
+        while (this.remoteWin > 0) {
+            let writer = this.writers.shift();
+            if (!writer) break;
+            writer();
+        }
     }
 
     write(buffer: Uint8Array): Promise<number> {
         if (this.sentEOF) {
             return Promise.reject("EOF");
         }
-        // TODO: use window
 
-        return this.send({
-            ID: codec.DataID,
-            channelID: this.remoteId,
-            length: buffer.byteLength,
-            data: buffer
-        });
+        return new Promise((resolve, reject) => {
+            let n = 0;
+            let tryWrite = () => {
+                if (this.sentEOF || this.sentClose) {
+                    reject("EOF");
+                    return;
+                }
+                if (buffer.byteLength == 0) {
+                    resolve(n);
+                    return;
+                }
+                let space = Math.min(this.maxRemotePayload, buffer.byteLength);
+                let reserved = this.reserveWindow(space);
+                if (reserved == 0) {
+                    this.writers.push(tryWrite);
+                    return;
+                }
+
+                let toSend = buffer.slice(0, reserved);
+
+                this.send({
+                    ID: codec.DataID,
+                    channelID: this.remoteId,
+                    length: toSend.byteLength,
+                    data: toSend,
+                }).then(() => {
+                    n += toSend.byteLength;
+                    buffer = buffer.slice(toSend.byteLength);
+                    if (buffer.byteLength == 0) {
+                        resolve(n);
+                        return;
+                    }
+                    this.writers.push(tryWrite);
+                })
+            }
+            tryWrite();
+        })
     }
 
     async closeWrite() {
@@ -90,6 +146,8 @@ export class Channel {
             ID: codec.EofID,
             channelID: this.remoteId
         });
+        this.writers.forEach(writer => writer());
+        this.writers = [];
     }
 
     async close(): Promise<void> {
@@ -108,12 +166,20 @@ export class Channel {
     shutdown(): void {
         this.readBuf = undefined;
         this.readers.forEach(reader => reader());
+        this.writers.forEach(writer => writer());
         this.ready.close();
         this.session.rmCh(this.localId);
     }
 
     async adjustWindow(n: number) {
-        // TODO
+        // Since myWindow is managed on our side, and can never exceed
+        // the initial window setting, we don't worry about overflow.
+        this.myWindow += n;
+        await this.send({
+            ID: codec.WindowAdjustID,
+            channelID: this.remoteId,
+            additionalBytes: n,
+        })
     }
 
     send(msg: codec.ChannelMessage): Promise<number> {
@@ -156,12 +222,12 @@ export class Channel {
             }
             this.remoteId = msg.senderID;
             this.maxRemotePayload = msg.maxPacketSize;
-            this.remoteWin += msg.windowSize;
+            this.addWindow(msg.windowSize);
             this.ready.push(true);
             return;
         }
         if (msg.ID === codec.WindowAdjustID) {
-            this.remoteWin += msg.additionalBytes;
+            this.addWindow(msg.additionalBytes);
         }
     }
 
