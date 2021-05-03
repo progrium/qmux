@@ -139,8 +139,6 @@ export class Channel {
         }
         if (msg.ID === codec.EofID) {
             this.gotEOF = true;
-            // TODO does this block if there are a lot of readers pending?
-            // is there a better way to interleave those?
             while (true) {
                 let reader = this.readers.shift();
                 if (reader === undefined) {
@@ -185,9 +183,10 @@ export class Channel {
             this.readBuf = util.concat([this.readBuf, msg.data], this.readBuf.length + msg.data.length);
         }
 
-        if (this.readers.length > 0) {
+        while (!this.readBuf || this.readBuf.length > 0) {
             let reader = this.readers.shift();
-            if (reader) reader();
+            if (!reader) break
+            reader();
         }
     }
 

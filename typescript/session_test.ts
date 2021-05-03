@@ -24,7 +24,7 @@ class Conn implements api.IConn {
         try {
             n = await this.conn.read(buff);
         } catch (e) {
-            if (e instanceof Deno.errors.Interrupted) {
+            if (e instanceof Deno.errors.Interrupted || e instanceof Deno.errors.BadResource) {
                 return undefined;
             }
             throw e;
@@ -120,5 +120,41 @@ Deno.test("tcp", async () => {
             return testExchange(new Conn(conn));
         }),
     ]);
+    listener.close();
+})
+
+Deno.test("multiple pending reads", async () => {
+    let listener = Deno.listen({ port: 0 });
+
+    let port = (listener.addr as Deno.NetAddr).port;
+
+    let lConn = listener.accept();
+
+    // let conn1 = Deno.connect({ port });
+    let sess1 = new session.Session(new Conn(await Deno.connect({ port })));
+    let sess2 = new session.Session(new Conn(await lConn));
+
+    let ch1p = sess1.accept();
+    let ch2 = await sess2.open();
+    let ch1 = await ch1p;
+    if (ch1 === undefined) {
+        throw new Error("accept failed");
+    }
+
+    let a = ch1.read(1);
+    let bc = ch1.read(2);
+
+    await ch2.write(new TextEncoder().encode("abc"));
+
+    assertEquals(await a, new TextEncoder().encode("a"))
+    assertEquals(await bc, new TextEncoder().encode("bc"))
+
+    await ch2.closeWrite();
+    await ch2.close();
+    await sess2.close();
+
+    await ch1.close();
+    await sess1.close();
+
     listener.close();
 })
