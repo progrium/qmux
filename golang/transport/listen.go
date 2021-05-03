@@ -1,6 +1,6 @@
 package transport
 
-import mux "github.com/progrium/qmux/golang"
+import "github.com/progrium/qmux/golang/mux"
 
 type Listener interface {
 	// Close closes the listener.
