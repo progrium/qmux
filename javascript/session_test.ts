@@ -20,8 +20,15 @@ class Conn implements api.IConn {
 
     async read(len: number): Promise<Uint8Array | undefined> {
         let buff = new Uint8Array(len);
-        // TODO does this need to loop if we read less than the expected amount?
-        let n = await this.conn.read(buff);
+        let n: number | null;
+        try {
+            n = await this.conn.read(buff);
+        } catch (e) {
+            if (e instanceof Deno.errors.Interrupted) {
+                return undefined;
+            }
+            throw e;
+        }
         if (n == null) {
             return undefined;
         }
@@ -40,7 +47,13 @@ class Conn implements api.IConn {
         // BadResource: Bad resource ID if the connection was already closed
         // because the other end disconnected. Should we catch it here, or
         // let that error bubble up?
-        this.conn.close();
+        try {
+            this.conn.close();
+        } catch (e) {
+            if (!(e instanceof Deno.errors.BadResource)) {
+                throw e;
+            }
+        }
         return Promise.resolve();
     }
 }
