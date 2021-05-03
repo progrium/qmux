@@ -70,7 +70,6 @@ async function startListener(conn: api.IConn) {
     await ch2.closeWrite();
     try {
         await sess.close();
-        await sess.done;
     } catch (e) {
         console.log(e);
     }
@@ -93,9 +92,7 @@ async function testExchange(conn: api.IConn) {
 
     assertEquals(new TextEncoder().encode("Hello world"), b);
     try {
-        // XXX this produces BadResourceID when the underlying socket is closed?
         await sess.close();
-        await sess.done;
     } catch (e) {
         console.log(e);
     }

@@ -47,14 +47,15 @@ export class Session implements api.ISession {
         return this.incoming.shift();
     }
 
-    close(): Promise<void> {
+    async close(): Promise<void> {
         for (const ids of Object.keys(this.channels)) {
             let id = parseInt(ids);
             if (this.channels[id] !== undefined) {
                 this.channels[id].shutdown();
             }
         }
-        return this.conn.close();
+        await this.conn.close();
+        await this.done;
     }
 
     async loop() {
