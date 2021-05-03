@@ -50,16 +50,21 @@ export class Channel {
                     resolve(undefined);
                     return;
                 }
-                if (this.readBuf.length >= len) {
-                    let data = this.readBuf.slice(0, len);
-                    this.readBuf = this.readBuf.slice(len);
-                    resolve(data);
-                    if (this.readBuf.length == 0 && this.gotEOF) {
+                if (this.readBuf.length == 0) {
+                    if (this.gotEOF) {
                         this.readBuf = undefined;
+                        resolve(undefined);
+                        return;
                     }
+                    this.readers.push(tryRead);
                     return;
                 }
-                this.readers.push(tryRead);
+                let data = this.readBuf.slice(0, len);
+                this.readBuf = this.readBuf.slice(data.byteLength);
+                if (this.readBuf.length == 0 && this.gotEOF) {
+                    this.readBuf = undefined;
+                }
+                resolve(data);
             }
             tryRead();
         });
@@ -132,10 +137,13 @@ export class Channel {
         }
         if (msg.ID === codec.EofID) {
             this.gotEOF = true;
-            // if (this.readers.length > 0) {
-            // 	this.readers.shift()();
-            // }
-            return;
+            while (true) {
+                let reader = this.readers.shift();
+                if (reader === undefined) {
+                    return;
+                }
+                reader();
+            }
         }
         if (msg.ID === codec.OpenFailureID) {
             this.session.rmCh(msg.channelID);
@@ -173,9 +181,10 @@ export class Channel {
             this.readBuf = util.concat([this.readBuf, msg.data], this.readBuf.length + msg.data.length);
         }
 
-        if (this.readers.length > 0) {
+        while (!this.readBuf || this.readBuf.length > 0) {
             let reader = this.readers.shift();
-            if (reader) reader();
+            if (!reader) break
+            reader();
         }
     }
 

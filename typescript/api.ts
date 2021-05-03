@@ -13,4 +13,5 @@ export interface ISession {
 
 export interface IChannel extends IConn {
     ident(): number
+    closeWrite(): Promise<void>
 }

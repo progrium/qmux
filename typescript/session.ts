@@ -17,6 +17,7 @@ export class Session implements api.ISession {
     incoming: util.queue<api.IChannel>;
     enc: codec.Encoder;
     dec: codec.Decoder;
+    done: Promise<void>;
 
     constructor(conn: api.IConn, debug: boolean = false) {
         this.conn = conn;
@@ -24,7 +25,7 @@ export class Session implements api.ISession {
         this.dec = new codec.Decoder(conn, debug);
         this.channels = [];
         this.incoming = new util.queue();
-        this.loop();
+        this.done = this.loop();
     }
 
     async open(): Promise<api.IChannel> {
@@ -46,14 +47,15 @@ export class Session implements api.ISession {
         return this.incoming.shift();
     }
 
-    close(): Promise<void> {
+    async close(): Promise<void> {
         for (const ids of Object.keys(this.channels)) {
             let id = parseInt(ids);
             if (this.channels[id] !== undefined) {
                 this.channels[id].shutdown();
             }
         }
-        return this.conn.close();
+        await this.conn.close();
+        await this.done;
     }
 
     async loop() {
