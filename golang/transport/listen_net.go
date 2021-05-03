@@ -4,7 +4,7 @@ import (
 	"io"
 	"net"
 
-	mux "github.com/progrium/qmux/golang"
+	"github.com/progrium/qmux/golang/mux"
 	"github.com/progrium/qmux/golang/session"
 )
 

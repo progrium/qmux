@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	mux "github.com/progrium/qmux/golang"
+	"github.com/progrium/qmux/golang/mux"
 )
 
 func fatal(err error, t *testing.T) {
