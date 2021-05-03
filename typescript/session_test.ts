@@ -121,7 +121,7 @@ Deno.test("tcp", async () => {
         }),
     ]);
     listener.close();
-})
+});
 
 Deno.test("multiple pending reads", async () => {
     let listener = Deno.listen({ port: 0 });
@@ -157,4 +157,4 @@ Deno.test("multiple pending reads", async () => {
     await sess1.close();
 
     listener.close();
-})
+});
