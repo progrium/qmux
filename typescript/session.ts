@@ -124,7 +124,7 @@ export class Session implements api.ISession {
 
     getCh(id: number): internal.Channel {
         let ch = this.channels[id];
-        if (ch.localId !== id) {
+        if (ch && ch.localId !== id) {
             console.log("bad ids:", id, ch.localId, ch.remoteId);
         }
         return ch;

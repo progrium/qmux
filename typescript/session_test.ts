@@ -5,7 +5,8 @@ import {
 import * as session from "./session.ts";
 import * as api from "./api.ts";
 import * as util from "./util.ts";
-import { Conn } from "./transport/deno/tcp.ts";
+import * as tcp from "./transport/deno/tcp.ts";
+import * as websocket from "./transport/deno/websocket.ts";
 
 async function readAll(conn: api.IConn): Promise<Uint8Array> {
     let buff = new Uint8Array();
@@ -18,7 +19,11 @@ async function readAll(conn: api.IConn): Promise<Uint8Array> {
     }
 }
 
-async function startListener(conn: api.IConn) {
+async function startListener(listener: api.IConnListener) {
+    let conn = await listener.accept();
+    if (!conn) {
+        throw new Error("accept failed")
+    }
     let sess = new session.Session(conn);
     let ch = await sess.open();
     let b = await readAll(ch);
@@ -29,9 +34,10 @@ async function startListener(conn: api.IConn) {
         throw new Error("accept failed")
     }
     await ch2.write(b);
-    await ch2.closeWrite();
+    await ch2.close();
     try {
         await sess.close();
+        await listener.close();
     } catch (e) {
         console.log(e);
     }
@@ -61,20 +67,27 @@ async function testExchange(conn: api.IConn) {
 }
 
 Deno.test("tcp", async () => {
-    let listener = Deno.listen({ port: 0 });
-
-    let port = (listener.addr as Deno.NetAddr).port;
-
+    let listener = new tcp.Listener({ port: 0 });
+    let port = (listener.listener.addr as Deno.NetAddr).port;
     await Promise.all([
-        Deno.connect({ port }).then(conn => {
-            return startListener(new Conn(conn));
-        }),
-        listener.accept().then(conn => {
-            return testExchange(new Conn(conn));
+        startListener(listener),
+        tcp.Dial({ port }).then(conn => {
+            return testExchange(conn);
         }),
     ]);
-    listener.close();
 });
+
+Deno.test("websocket", async () => {
+    let endpoint = "ws://127.0.0.1:9999";
+    let listener = new websocket.Listener(9999);
+    await Promise.all([
+        startListener(listener),
+        websocket.Dial(endpoint).then(conn => {
+            return testExchange(conn);
+        }),
+    ]);
+});
+
 
 Deno.test("multiple pending reads", async () => {
     let listener = Deno.listen({ port: 0 });
@@ -83,8 +96,8 @@ Deno.test("multiple pending reads", async () => {
 
     let lConn = listener.accept();
 
-    let sess1 = new session.Session(new Conn(await Deno.connect({ port })));
-    let sess2 = new session.Session(new Conn(await lConn));
+    let sess1 = new session.Session(new tcp.Conn(await Deno.connect({ port })));
+    let sess2 = new session.Session(new tcp.Conn(await lConn));
 
     let ch1p = sess1.accept();
     let ch2 = await sess2.open();
