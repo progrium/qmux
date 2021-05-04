@@ -51,3 +51,74 @@ export class queue<ValueType> {
         });
     }
 }
+
+export class ReadBuffer {
+    gotEOF: boolean;
+    readBuf: Uint8Array | undefined;
+    readers: Array<() => void>;
+
+    constructor() {
+        this.readBuf = new Uint8Array(0);
+        this.gotEOF = false;
+        this.readers = [];
+    }
+
+    read(len: number): Promise<Uint8Array | undefined> {
+        return new Promise(resolve => {
+            let tryRead = () => {
+                if (this.readBuf === undefined) {
+                    resolve(undefined);
+                    return;
+                }
+                if (this.readBuf.length == 0) {
+                    if (this.gotEOF) {
+                        this.readBuf = undefined;
+                        resolve(undefined);
+                        return;
+                    }
+                    this.readers.push(tryRead);
+                    return;
+                }
+                let data = this.readBuf.slice(0, len);
+                this.readBuf = this.readBuf.slice(data.byteLength);
+                if (this.readBuf.length == 0 && this.gotEOF) {
+                    this.readBuf = undefined;
+                }
+                resolve(data);
+            }
+            tryRead();
+        });
+    }
+
+    write(data: Uint8Array) {
+        if (this.readBuf) {
+            this.readBuf = concat([this.readBuf, data], this.readBuf.length + data.length);
+        }
+
+        while (!this.readBuf || this.readBuf.length > 0) {
+            let reader = this.readers.shift();
+            if (!reader) break
+            reader();
+        }
+    }
+
+    eof() {
+        this.gotEOF = true;
+        this.flushReaders();
+    }
+
+    close() {
+        this.readBuf = undefined;
+        this.flushReaders();
+    }
+
+    protected flushReaders() {
+        while (true) {
+            let reader = this.readers.shift();
+            if (reader === undefined) {
+                return;
+            }
+            reader();
+        }
+    }
+}
