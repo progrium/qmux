@@ -15,3 +15,8 @@ export interface IChannel extends IConn {
     ident(): number
     closeWrite(): Promise<void>
 }
+
+export interface IConnListener {
+    accept(): Promise<IConn | undefined>;
+    close(): Promise<void>;
+}

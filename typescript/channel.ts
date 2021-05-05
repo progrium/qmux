@@ -17,12 +17,10 @@ export class Channel {
     session: internal.Session;
     ready: util.queue<boolean>;
     sentEOF: boolean;
-    gotEOF: boolean;
     sentClose: boolean;
     remoteWin: number;
     myWindow: number;
-    readBuf: Uint8Array | undefined;
-    readers: Array<() => void>;
+    readBuf: util.ReadBuffer;
     writers: Array<() => void>;
 
     constructor(sess: internal.Session) {
@@ -31,52 +29,31 @@ export class Channel {
         this.maxIncomingPayload = 0;
         this.maxRemotePayload = 0;
         this.sentEOF = false;
-        this.gotEOF = false;
         this.sentClose = false;
         this.remoteWin = 0;
         this.myWindow = 0;
         this.ready = new util.queue();
         this.session = sess;
-        this.readers = [];
         this.writers = [];
+        this.readBuf = new util.ReadBuffer();
     }
 
     ident(): number {
         return this.localId;
     }
 
-    read(len: number): Promise<Uint8Array | undefined> {
-        return new Promise(resolve => {
-            let tryRead = () => {
-                if (this.readBuf === undefined) {
-                    resolve(undefined);
-                    return;
+    async read(len: number): Promise<Uint8Array | undefined> {
+        let data = await this.readBuf.read(len);
+        if (data !== undefined) {
+            try {
+                await this.adjustWindow(data.byteLength)
+            } catch (e) {
+                if (e !== "EOF") {
+                    throw e;
                 }
-                if (this.readBuf.length == 0) {
-                    if (this.gotEOF) {
-                        this.readBuf = undefined;
-                        resolve(undefined);
-                        return;
-                    }
-                    this.readers.push(tryRead);
-                    return;
-                }
-                let data = this.readBuf.slice(0, len);
-                this.readBuf = this.readBuf.slice(data.byteLength);
-                if (this.readBuf.length == 0 && this.gotEOF) {
-                    this.readBuf = undefined;
-                }
-                this.adjustWindow(data.byteLength).then(() => {
-                    resolve(data);
-                }).catch((e) => {
-                    if (e !== "EOF") {
-                        throw e;
-                    }
-                    resolve(data);
-                });
             }
-            tryRead();
-        });
+        }
+        return data;
     }
 
     reserveWindow(win: number): number {
@@ -164,8 +141,7 @@ export class Channel {
     }
 
     shutdown(): void {
-        this.readBuf = undefined;
-        this.readers.forEach(reader => reader());
+        this.readBuf.close();
         this.writers.forEach(writer => writer());
         this.ready.close();
         this.session.rmCh(this.localId);
@@ -202,14 +178,7 @@ export class Channel {
             return;
         }
         if (msg.ID === codec.EofID) {
-            this.gotEOF = true;
-            while (true) {
-                let reader = this.readers.shift();
-                if (reader === undefined) {
-                    return;
-                }
-                reader();
-            }
+            this.readBuf.eof();
         }
         if (msg.ID === codec.OpenFailureID) {
             this.session.rmCh(msg.channelID);
@@ -243,15 +212,7 @@ export class Channel {
 
         this.myWindow -= msg.length;
 
-        if (this.readBuf) {
-            this.readBuf = util.concat([this.readBuf, msg.data], this.readBuf.length + msg.data.length);
-        }
-
-        while (!this.readBuf || this.readBuf.length > 0) {
-            let reader = this.readers.shift();
-            if (!reader) break
-            reader();
-        }
+        this.readBuf.write(msg.data)
     }
 
 }

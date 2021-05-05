@@ -118,14 +118,13 @@ export class Session implements api.ISession {
         let ch = new internal.Channel(this);
         ch.remoteWin = 0;
         ch.myWindow = internal.channelWindowSize;
-        ch.readBuf = new Uint8Array(0);
         ch.localId = this.addCh(ch);
         return ch;
     }
 
     getCh(id: number): internal.Channel {
         let ch = this.channels[id];
-        if (ch.localId !== id) {
+        if (ch && ch.localId !== id) {
             console.log("bad ids:", id, ch.localId, ch.remoteId);
         }
         return ch;
