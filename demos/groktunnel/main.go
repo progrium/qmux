@@ -7,37 +7,39 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strings"
-	"sync"
 	"time"
 
 	vhost "github.com/inconshreveable/go-vhost"
-	shortuuid "github.com/lithammer/shortuuid/v3"
 	"github.com/progrium/qmux/golang/session"
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	var port = flag.String("p", "9999", "server port to use")
 	var host = flag.String("h", "vcap.me", "server hostname to use")
 	var addr = flag.String("b", "127.0.0.1", "ip to bind [server only]")
 	flag.Parse()
 
-	// client usage: groktunnel -h <server hostname> <local port>
+	// client usage: groktunnel [-h=<server hostname>] <local port>
 	if flag.Arg(0) != "" {
-		conn, err := net.Dial("tcp", "_new."+net.JoinHostPort(*host, *port))
+		conn, err := net.Dial("tcp", net.JoinHostPort(*host, *port))
 		fatal(err)
 		client := httputil.NewClientConn(conn, bufio.NewReader(conn))
 		req, err := http.NewRequest("GET", "/", nil)
-		req.Host = "_new." + net.JoinHostPort(*host, *port)
+		req.Host = net.JoinHostPort(*host, *port)
 		fatal(err)
 		client.Write(req)
 		resp, _ := client.Read(req)
-		fmt.Printf("port %s http available at:\nhttp://%s\n", flag.Arg(0), resp.Header.Get("X-Public-Host"))
+		fmt.Printf("port %s http available at:\n", flag.Arg(0))
+		fmt.Printf("http://%s\n", resp.Header.Get("X-Public-Host"))
 		c, _ := client.Hijack()
 		sess := session.New(c)
+		defer sess.Close()
 		for {
 			ch, err := sess.Accept()
 			fatal(err)
@@ -48,47 +50,14 @@ func main() {
 		return
 	}
 
-	// server usage: groktunnel -h <hostname> -b <bind ip>
+	// server usage: groktunnel [-h=<hostname>] [-b=<bind ip>]
 	l, err := net.Listen("tcp", net.JoinHostPort(*addr, *port))
 	fatal(err)
+	defer l.Close()
 	vmux, err := vhost.NewHTTPMuxer(l, 1*time.Second)
 	fatal(err)
-	go func() {
-		ml, err := vmux.Listen("_new." + net.JoinHostPort(*host, *port))
-		fatal(err)
-		mux := http.NewServeMux()
-		srv := &http.Server{Handler: mux}
-		var sess *session.Session
-		mux.HandleFunc(fmt.Sprintf("_new.%s/", *host), func(w http.ResponseWriter, r *http.Request) {
-			publicHost := strings.ToLower(fmt.Sprintf("%s.%s", shortuuid.New(), *host))
-			pl, err := vmux.Listen(strings.TrimSuffix(net.JoinHostPort(publicHost, *port), ":80"))
-			fatal(err)
-			go func() {
-				for {
-					conn, err := pl.Accept()
-					if err != nil {
-						log.Println(err)
-						return
-					}
-					log.Printf("%s: tunnel conn", publicHost)
-					ch, err := sess.Open(context.Background())
-					if err != nil {
-						log.Println(err)
-						return
-					}
-					go join(conn, ch)
-				}
-			}()
-			w.Header().Add("X-Public-Host", strings.TrimSuffix(net.JoinHostPort(publicHost, *port), ":80"))
-			w.Header().Add("Connection", "close")
-			w.WriteHeader(http.StatusOK)
-			conn, _, _ := w.(http.Hijacker).Hijack()
-			sess = session.New(conn)
-			log.Printf("%s: new session", publicHost)
-			sess.Wait()
-		})
-		srv.Serve(ml)
-	}()
+
+	go serve(vmux, *host, *port)
 
 	log.Printf("groktunnel server [%s] ready!\n", *host)
 	for {
@@ -100,20 +69,55 @@ func main() {
 	}
 }
 
+func serve(vmux *vhost.HTTPMuxer, host, port string) {
+	ml, err := vmux.Listen(net.JoinHostPort(host, port))
+	fatal(err)
+	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		publicHost := strings.TrimSuffix(net.JoinHostPort(newSubdomain()+host, port), ":80")
+		pl, err := vmux.Listen(publicHost)
+		fatal(err)
+		w.Header().Add("X-Public-Host", publicHost)
+		w.Header().Add("Connection", "close")
+		w.WriteHeader(http.StatusOK)
+		conn, _, _ := w.(http.Hijacker).Hijack()
+		sess := session.New(conn)
+		defer sess.Close()
+		log.Printf("%s: start session", publicHost)
+		go func() {
+			for {
+				conn, err := pl.Accept()
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				ch, err := sess.Open(context.Background())
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				go join(ch, conn)
+			}
+		}()
+		sess.Wait()
+		log.Printf("%s: end session", publicHost)
+	})}
+	srv.Serve(ml)
+}
+
 func join(a io.ReadWriteCloser, b io.ReadWriteCloser) {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		io.Copy(a, b)
-		wg.Done()
-	}()
-	go func() {
-		io.Copy(b, a)
-		wg.Done()
-	}()
-	wg.Wait()
+	go io.Copy(b, a)
+	io.Copy(a, b)
 	a.Close()
 	b.Close()
+}
+
+func newSubdomain() string {
+	letters := []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+	b := make([]rune, 10)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b) + "."
 }
 
 func fatal(err error) {

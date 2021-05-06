@@ -26,7 +26,7 @@ Then we run groktunnel as a client by giving it the local port to expose.
 ```
 $ ./groktunnel 8000
 port 8000 http available at:
-http://bvwbpphrn4asvwn6wfnazu.vcap.me:9999
+http://y8eyshnpol.vcap.me:9999
 ```
 
 That address should serve the same content as the local web server on 8000. For added effect,
