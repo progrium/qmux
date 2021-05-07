@@ -11,7 +11,7 @@ The specification is [here](https://github.com/progrium/qmux/blob/main/SPEC.md).
 ## Implementations
 
 - [x] [Golang](https://github.com/progrium/qmux/tree/main/golang) (best reference)
-- [ ] [TypeScript](https://github.com/progrium/qmux/tree/main/typescript)
+- [x] [TypeScript](https://github.com/progrium/qmux/tree/main/typescript)
 - [ ] Python
 - [ ] C# (help wanted)
 
