@@ -3,11 +3,11 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -19,7 +19,6 @@ import (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	var port = flag.String("p", "9999", "server port to use")
 	var host = flag.String("h", "vcap.me", "server hostname to use")
 	var addr = flag.String("b", "127.0.0.1", "ip to bind [server only]")
@@ -112,12 +111,16 @@ func join(a io.ReadWriteCloser, b io.ReadWriteCloser) {
 }
 
 func newSubdomain() string {
-	letters := []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-	b := make([]rune, 10)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+	b := make([]byte, 10)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
 	}
-	return string(b) + "."
+	letters := []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+	r := make([]rune, 10)
+	for i := range r {
+		r[i] = letters[int(b[i])*len(letters)/256]
+	}
+	return string(r) + "."
 }
 
 func fatal(err error) {
