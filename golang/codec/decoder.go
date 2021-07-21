@@ -28,6 +28,10 @@ func (dec *Decoder) Decode() (Message, error) {
 		return nil, err
 	}
 
+	if DebugBytes != nil {
+		fmt.Fprintln(DebugBytes, ">>DEC", packet)
+	}
+
 	return decode(packet)
 }
 
@@ -86,6 +90,9 @@ func decode(packet []byte) (Message, error) {
 	}
 	if err := Unmarshal(packet, msg); err != nil {
 		return nil, err
+	}
+	if DebugMessages != nil {
+		fmt.Fprintln(DebugMessages, ">>DEC", msg)
 	}
 	return msg, nil
 }

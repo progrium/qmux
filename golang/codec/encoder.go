@@ -19,9 +19,17 @@ func (enc *Encoder) Encode(msg interface{}) error {
 	enc.Lock()
 	defer enc.Unlock()
 
+	if DebugMessages != nil {
+		fmt.Fprintln(DebugMessages, "<<ENC", msg)
+	}
+
 	b, err := Marshal(msg)
 	if err != nil {
 		return err
+	}
+
+	if DebugBytes != nil {
+		fmt.Fprintln(DebugBytes, "<<ENC", b)
 	}
 
 	_, err = enc.w.Write(b)
