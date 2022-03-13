@@ -11,7 +11,7 @@ public enum MessageType : byte
     MessageChannelClose = 106
 }
 
-public enum PayloadSizes : int
+public enum PayloadSizes : byte
 {
     MessageChannelOpen = 12,
     MessageChannelOpenConfirm = 16,
@@ -20,7 +20,6 @@ public enum PayloadSizes : int
     MessageChannelData = 8,
     MessageChannelEOF = 4,
     MessageChannelClose = 4
-
 }
 
 interface Message
