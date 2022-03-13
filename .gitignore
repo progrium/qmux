@@ -1,3 +1,10 @@
 TODO
 typescript/dist 
 demos/groktunnel/groktunnel
+
+csharp/qmux/bin
+csharp/qmux/obj
+csharp/qmux.tests/bin
+csharp/qmux.tests/obj
+
+**/.DS_Store
