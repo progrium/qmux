@@ -4,7 +4,7 @@ using Xunit;
 
 using qmux.codec;
 
-public class TestCodec
+public class TestDataMessage
 {
     [Fact]
     public void Test_DataMessage_MarshalUnmarshalMuxRoundtrip()
