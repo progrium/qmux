@@ -9,14 +9,14 @@ public class TestCloseMessage
     [Fact]
     public void Test_CloseMessage_MarshalUnmarshalMuxRoundtrip()
     {
-        var dataMessage = new CloseMessage()
+        var msg1 = new CloseMessage()
         {
             ChannelId = 10,
         };
 
-        var marshaled = dataMessage.MarshalMux();
-        var dataMessage2 = new CloseMessage();
-        dataMessage2.UnmarshalMux(marshaled);
-        Assert.Equal(dataMessage.ChannelId, dataMessage2.ChannelId);
+        var marshaled = msg1.MarshalMux();
+        var msg2 = new CloseMessage();
+        msg2.UnmarshalMux(marshaled);
+        Assert.Equal(msg1.ChannelId, msg2.ChannelId);
     }
 }

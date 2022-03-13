@@ -9,14 +9,14 @@ public class TestEofMessage
     [Fact]
     public void Test_EofMessage_MarshalUnmarshalMuxRoundtrip()
     {
-        var dataMessage = new EofMessage()
+        var msg1 = new EofMessage()
         {
             ChannelId = 10,
         };
 
-        var marshaled = dataMessage.MarshalMux();
-        var dataMessage2 = new EofMessage();
-        dataMessage2.UnmarshalMux(marshaled);
-        Assert.Equal(dataMessage.ChannelId, dataMessage2.ChannelId);
+        var marshaled = msg1.MarshalMux();
+        var msg2 = new EofMessage();
+        msg2.UnmarshalMux(marshaled);
+        Assert.Equal(msg1.ChannelId, msg2.ChannelId);
     }
 }
