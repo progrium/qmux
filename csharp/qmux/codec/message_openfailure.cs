@@ -24,7 +24,7 @@ public struct OpenFailureMessage
         using (var writer = new BinaryWriter(stream, Encoding.BigEndianUnicode, false))
         {
             // 0
-            writer.Write((byte)MessageType.MessageChannelData);
+            writer.Write((byte)MessageType.MessageChannelOpenFailure);
             // 1-5
             writer.Write(this.ChannelId);
         }

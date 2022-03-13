@@ -28,7 +28,7 @@ public struct OpenConfirmMessage
         using (var writer = new BinaryWriter(stream, Encoding.BigEndianUnicode, false))
         {
             // 0
-            writer.Write((byte)MessageType.MessageChannelData);
+            writer.Write((byte)MessageType.MessageChannelOpenConfirm);
             // 1-5
             writer.Write(this.ChannelId);
             // 5-9
