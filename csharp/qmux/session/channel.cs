@@ -1,6 +1,7 @@
 namespace qmux.session;
 
 using qmux.codec;
+using qmux.mux;
 
 public static partial class session
 {
@@ -12,7 +13,7 @@ public static partial class session
         public UInt32 RemoteId;
         public UInt32 MaxIncomingPayload;
         public UInt32 maxRemotePayload;
-        public session.Session Session;
+        public mux.ISession Session;
         public ChannelDirection Direction;
         // TODO @stevemurr: this is a chan
         // TODO @stevemurr: establish equivalent chan pattern 

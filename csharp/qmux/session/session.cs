@@ -2,7 +2,7 @@ namespace qmux.session;
 
 using qmux.codec;
 using qmux.mux;
-using errors = gostdlib.errors;
+using gostdlib.errors;
 
 public static partial class session
 {

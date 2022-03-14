@@ -1,8 +1,8 @@
 namespace qmux.codec;
 
 using System.Text;
-using errors = gostdlib.errors;
-using io = gostdlib.io;
+using gostdlib.errors;
+using gostdlib.io;
 
 public static partial class codec
 {

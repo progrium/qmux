@@ -1,6 +1,6 @@
 namespace qmux.mux;
 
-using io = gostdlib.io;
+using gostdlib.io;
 
 public static partial class mux
 {
