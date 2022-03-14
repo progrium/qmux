@@ -22,7 +22,7 @@ public enum PayloadSizes : byte
     MessageChannelClose = 4
 }
 
-interface Message
+public interface Message
 {
     public (UInt32, bool) Channel();
     public string String();
