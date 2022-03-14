@@ -1,8 +1,8 @@
 namespace qmux.codec;
 
 using System.Text;
-using gostdlib.errors;
-using gostdlib.io;
+using errors = gostdlib.errors;
+using io = gostdlib.io;
 
 internal static class ErrorMessages
 {
@@ -14,44 +14,44 @@ internal static class ErrorMessages
     public static string UnexpectedMessageType = "unexpected MessageType passed to Decode";
 }
 
-public static class Codec
+public static class G
 {
-    public static IWriter? DebugMessages;
-    public static IWriter? DebugBytes;
-    public static (byte[], Error?) Marshal(object v)
+    public static io.IWriter? DebugMessages;
+    public static io.IWriter? DebugBytes;
+    public static (byte[], errors.Error?) Marshal(object v)
     {
         if (!(v.GetType() == typeof(Marshaler)))
         {
-            return (new byte[] { }, new Error($"{ErrorMessages.MarshalObjectFailed} was={v.GetType()} expected={typeof(Marshaler)}"));
+            return (new byte[] { }, new errors.Error($"{ErrorMessages.MarshalObjectFailed} was={v.GetType()} expected={typeof(Marshaler)}"));
         }
 
         var m = v as Marshaler;
         if (m == null)
         {
-            return (new byte[] { }, new Error(ErrorMessages.ObjectAsMarshalerFailed));
+            return (new byte[] { }, new errors.Error(ErrorMessages.ObjectAsMarshalerFailed));
         }
         return m.MarshalMux();
     }
-    public static Error? Unmarshal(byte[] b, object v)
+    public static errors.Error? Unmarshal(byte[] b, object v)
     {
         if (!(v.GetType() == typeof(Unmarshaler)))
         {
-            return new Error($"{ErrorMessages.UnmarshalObjectFailed} was={v.GetType()} expected={typeof(Unmarshaler)}");
+            return new errors.Error($"{ErrorMessages.UnmarshalObjectFailed} was={v.GetType()} expected={typeof(Unmarshaler)}");
         }
         var u = v as Unmarshaler;
         if (u == null)
         {
-            return new Error($"{ErrorMessages.UnmarshalUnsupportedField} for value={v.GetType()}");
+            return new errors.Error($"{ErrorMessages.UnmarshalUnsupportedField} for value={v.GetType()}");
         }
 
         return u.UnmarshalMux(b);
     }
 
-    public static (Message?, Error?) Decode(byte[] packet)
+    public static (Message?, errors.Error?) Decode(byte[] packet)
     {
         if (packet.Length == 0)
         {
-            return (null, new Error(ErrorMessages.DecodeFailedByteArrayEmpty));
+            return (null, new errors.Error(ErrorMessages.DecodeFailedByteArrayEmpty));
         }
 
         Message? msg;
@@ -79,7 +79,7 @@ public static class Codec
                 msg = new CloseMessage();
                 break;
             default:
-                return (null, new Error($"{ErrorMessages.UnexpectedMessageType}: was={packet[0]}"));
+                return (null, new errors.Error($"{ErrorMessages.UnexpectedMessageType}: was={packet[0]}"));
         }
 
         var err = Unmarshal(packet, msg);
@@ -96,7 +96,7 @@ public static class Codec
         return (msg, null);
     }
 
-    public static (byte[], Error?) ReadPacket(IReader c)
+    public static (byte[], errors.Error?) ReadPacket(io.IReader c)
     {
         var msgNum = new byte[1];
         var (_, err) = c.Read(msgNum);
@@ -152,10 +152,10 @@ public static class Codec
 
 public interface Marshaler
 {
-    public (byte[], Error?) MarshalMux();
+    public (byte[], errors.Error?) MarshalMux();
 }
 
 public interface Unmarshaler
 {
-    public Error? UnmarshalMux(byte[] b);
+    public errors.Error? UnmarshalMux(byte[] b);
 }

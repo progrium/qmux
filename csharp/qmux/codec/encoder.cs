@@ -1,40 +1,40 @@
-using System.Text;
 namespace qmux.codec;
 
+using System.Text;
 using System.Threading;
-using gostdlib.errors;
-using gostdlib.io;
+using errors = gostdlib.errors;
+using io = gostdlib.io;
 
 public class Encoder
 {
     private Mutex mutex = new Mutex();
-    public IWriter W;
+    public io.IWriter W;
 
-    public Encoder(IWriter w)
+    public Encoder(io.IWriter w)
     {
         this.W = w;
     }
 
-    public Error? Encode(object msg)
+    public errors.Error? Encode(object msg)
     {
         this.mutex.WaitOne();
-        if (Codec.DebugMessages != null)
+        if (G.DebugMessages != null)
         {
             var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + msg.ToString());
-            Codec.DebugMessages.Write(debugBytes);
+            G.DebugMessages.Write(debugBytes);
         }
 
-        var (b, err) = Codec.Marshal(msg);
+        var (b, err) = G.Marshal(msg);
         if (err != null)
         {
             return err;
         }
 
         var _ = this.W.Write(b);
-        if (Codec.DebugBytes != null)
+        if (G.DebugBytes != null)
         {
             var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + b);
-            Codec.DebugBytes.Write(debugBytes);
+            G.DebugBytes.Write(debugBytes);
         }
 
         this.mutex.ReleaseMutex();
