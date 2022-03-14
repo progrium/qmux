@@ -1,5 +1,11 @@
 namespace qmux.codec;
 
+public interface IMessage
+{
+    public (UInt32, bool) Channel();
+    public string String();
+}
+
 public enum MessageType : byte
 {
     MessageChannelOpen = 100,
@@ -20,10 +26,4 @@ public enum PayloadSizes : byte
     MessageChannelData = 8,
     MessageChannelEOF = 4,
     MessageChannelClose = 4
-}
-
-public interface Message
-{
-    public (UInt32, bool) Channel();
-    public string String();
 }

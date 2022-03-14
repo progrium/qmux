@@ -14,7 +14,7 @@ public struct Channel
     public ChannelDirection Direction;
     // TODO @stevemurr: this is a chan
     // TODO @stevemurr: establish equivalent chan pattern 
-    public codec.Message message;
+    public codec.IMessage message;
     public bool sentOEF;
     public IWindow remoteWin;
     // TODO @stevemurr: what type is *buffer

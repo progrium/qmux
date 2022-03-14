@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 
-public struct DataMessage : Message
+public struct DataMessage : IMessage
 {
     public UInt32 ChannelId;
     public UInt32 Length;

@@ -47,14 +47,14 @@ public static class G
         return u.UnmarshalMux(b);
     }
 
-    public static (Message?, errors.Error?) Decode(byte[] packet)
+    public static (IMessage?, errors.Error?) Decode(byte[] packet)
     {
         if (packet.Length == 0)
         {
             return (null, new errors.Error(ErrorMessages.DecodeFailedByteArrayEmpty));
         }
 
-        Message? msg;
+        IMessage? msg;
         switch ((MessageType)packet[0])
         {
             case (MessageType.MessageChannelOpen):

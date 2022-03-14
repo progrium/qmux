@@ -15,7 +15,7 @@ public class Decoder
         this.r = r;
     }
 
-    public (Message?, errors.Error?) Decode()
+    public (IMessage?, errors.Error?) Decode()
     {
         this.mutex.WaitOne();
         if (this.r == null)

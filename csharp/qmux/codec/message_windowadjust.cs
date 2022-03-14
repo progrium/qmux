@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 
-public struct WindowAdjustMessage : Message
+public struct WindowAdjustMessage : IMessage
 {
     public UInt32 ChannelId;
     public UInt32 AdditionalBytes;
