@@ -96,7 +96,7 @@ public static class Codec
         return (msg, null);
     }
 
-    private static (byte[], Error?) readPacket(IReader c)
+    public static (byte[], Error?) ReadPacket(IReader c)
     {
         var msgNum = new byte[1];
         var (_, err) = c.Read(msgNum);
