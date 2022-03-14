@@ -1,5 +1,7 @@
 namespace gostdlib.io;
 
+using gostdlib.errors;
+
 public interface IWriter
 {
     public int Write(byte[] p);
@@ -7,7 +9,7 @@ public interface IWriter
 
 public interface IReader
 {
-    public byte[] Read();
+    public (int, Error?) Read(byte[] p);
 }
 
 public interface ICloser
