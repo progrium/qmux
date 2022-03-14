@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 
-public struct OpenFailureMessage
+public struct OpenFailureMessage : Message
 {
     public UInt32 ChannelId;
     public string String()

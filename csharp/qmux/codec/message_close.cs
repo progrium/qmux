@@ -1,7 +1,7 @@
 namespace qmux.codec;
 
 using System.Text;
-public struct CloseMessage
+public struct CloseMessage : Message
 {
     public UInt32 ChannelId;
     public string String()

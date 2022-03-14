@@ -1,7 +1,7 @@
 namespace qmux.codec;
 
 using System.Text;
-public struct OpenMessage
+public struct OpenMessage : Message
 {
     public UInt32 SenderId;
     public UInt32 WindowSize;

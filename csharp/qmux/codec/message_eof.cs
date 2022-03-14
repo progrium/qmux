@@ -1,7 +1,7 @@
 namespace qmux.codec;
 
 using System.Text;
-public struct EofMessage
+public struct EofMessage : Message
 {
     public UInt32 ChannelId;
     public string String()
