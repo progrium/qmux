@@ -4,18 +4,26 @@ using System.Text;
 using errors = gostdlib.errors;
 using io = gostdlib.io;
 
-internal static class ErrorMessages
+public static partial class codec
 {
-    public static string MarshalObjectFailed = "marshal object failed";
-    public static string UnmarshalObjectFailed = "unmarshal object failed";
-    public static string ObjectAsMarshalerFailed = "object v failed to cast to type Marshaler";
-    public static string UnmarshalUnsupportedField = "unmarshal unsupported filed";
-    public static string DecodeFailedByteArrayEmpty = "decode failed: byte array is empty: expected MessageType in first byte";
-    public static string UnexpectedMessageType = "unexpected MessageType passed to Decode";
-}
+    internal static class ErrorMessages
+    {
+        public static string MarshalObjectFailed = "marshal object failed";
+        public static string UnmarshalObjectFailed = "unmarshal object failed";
+        public static string ObjectAsMarshalerFailed = "object v failed to cast to type Marshaler";
+        public static string UnmarshalUnsupportedField = "unmarshal unsupported filed";
+        public static string DecodeFailedByteArrayEmpty = "decode failed: byte array is empty: expected MessageType in first byte";
+        public static string UnexpectedMessageType = "unexpected MessageType passed to Decode";
+    }
+    public interface IMarshaler
+    {
+        public (byte[], errors.Error?) MarshalMux();
+    }
 
-public static class G
-{
+    public interface IUnmarshaler
+    {
+        public errors.Error? UnmarshalMux(byte[] b);
+    }
     public static io.IWriter? DebugMessages;
     public static io.IWriter? DebugBytes;
     public static (byte[], errors.Error?) Marshal(object v)
@@ -148,14 +156,4 @@ public static class G
         }
         return (packet, null);
     }
-}
-
-public interface IMarshaler
-{
-    public (byte[], errors.Error?) MarshalMux();
-}
-
-public interface IUnmarshaler
-{
-    public errors.Error? UnmarshalMux(byte[] b);
 }

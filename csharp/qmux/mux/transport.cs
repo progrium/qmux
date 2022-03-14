@@ -1,5 +1,8 @@
 namespace qmux.mux;
 
-using gostdlib.io;
+using io = gostdlib.io;
 
-public interface Transport : IReader, IWriter, ICloser { }
+public static partial class mux
+{
+    public interface ITransport : io.IReader, io.IWriter, io.ICloser { }
+}

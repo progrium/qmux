@@ -5,39 +5,42 @@ using System.Threading;
 using errors = gostdlib.errors;
 using io = gostdlib.io;
 
-public class Encoder
+public static partial class codec
 {
-    private Mutex mutex = new Mutex();
-    public io.IWriter w;
-
-    public Encoder(io.IWriter w)
+    public class Encoder
     {
-        this.w = w;
-    }
+        private Mutex mutex = new Mutex();
+        public io.IWriter w;
 
-    public errors.Error? Encode(object msg)
-    {
-        this.mutex.WaitOne();
-        if (G.DebugMessages != null)
+        public Encoder(io.IWriter w)
         {
-            var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + msg.ToString());
-            G.DebugMessages.Write(debugBytes);
+            this.w = w;
         }
 
-        var (b, err) = G.Marshal(msg);
-        if (err != null)
+        public errors.Error? Encode(object msg)
         {
-            return err;
-        }
+            this.mutex.WaitOne();
+            if (codec.DebugMessages != null)
+            {
+                var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + msg.ToString());
+                codec.DebugMessages.Write(debugBytes);
+            }
 
-        var _ = this.w.Write(b);
-        if (G.DebugBytes != null)
-        {
-            var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + b);
-            G.DebugBytes.Write(debugBytes);
-        }
+            var (b, err) = codec.Marshal(msg);
+            if (err != null)
+            {
+                return err;
+            }
 
-        this.mutex.ReleaseMutex();
-        return null;
+            var _ = this.w.Write(b);
+            if (codec.DebugBytes != null)
+            {
+                var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + b);
+                codec.DebugBytes.Write(debugBytes);
+            }
+
+            this.mutex.ReleaseMutex();
+            return null;
+        }
     }
 }

@@ -1,8 +1,11 @@
 namespace qmux.mux;
 
-using gostdlib.errors;
+using errors = gostdlib.errors;
 
-public interface Waiter
+public partial class mux
 {
-    public Error? Wait();
+    public interface IWaiter
+    {
+        public errors.Error? Wait();
+    }
 }

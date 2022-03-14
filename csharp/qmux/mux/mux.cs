@@ -1,21 +1,21 @@
 namespace qmux.mux;
 
-using gostdlib.errors;
+using errors = gostdlib.errors;
 
-internal static class ErrorMessages
+public static partial class mux
 {
-    public static string SessionDoesNotSupportWaiting = "session does not support waiting";
-}
-public static class Mux
-{
+    internal static class ErrorMessages
+    {
+        public static string SessionDoesNotSupportWaiting = "session does not support waiting";
+    }
     // Wait blocks until the session transport has shut down, and returns the
     // error causing the shutdown.
-    public static Error? Wait(Session sess)
+    public static errors.Error? Wait(ISession sess)
     {
-        var w = sess as Waiter;
+        var w = sess as IWaiter;
         if (w == null)
         {
-            return new Error(ErrorMessages.SessionDoesNotSupportWaiting);
+            return new errors.Error(ErrorMessages.SessionDoesNotSupportWaiting);
         }
 
         return w.Wait();

@@ -1,3 +1,6 @@
 namespace qmux.session;
 
-public interface IWindow { }
+public static partial class session
+{
+    public interface IWindow { }
+}

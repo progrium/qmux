@@ -1,22 +1,38 @@
 namespace qmux.session;
 
-using codec = qmux.codec;
+using qmux.codec;
+using qmux.mux;
 using errors = gostdlib.errors;
-using mux = qmux.mux;
 
-public enum ChannelDirection : byte
+public static partial class session
 {
-    Inbound = 0,
-    Outbound
-}
+    public enum ChannelDirection : byte
+    {
+        Inbound = 0,
+        Outbound
+    }
 
-internal static class ErrorMesasges
-{
-    public static string RemoteSideWroteTooMuch = "qmux: remote side wrote too much";
-}
+    internal static class ErrorMesasges
+    {
+        public static string RemoteSideWroteTooMuch = "qmux: remote side wrote too much";
+    }
+    public struct Session
+    {
+        public mux.ITransport t;
 
-public static class G
-{
+        // chans chanList
+
+        public codec.Encoder enc;
+        public codec.Decoder dec;
+
+        // TODO @stevemurr: this is a chan
+        public mux.IChannel inbox;
+
+        public errors.Error? error;
+
+        // errCond sync.Cond
+        // closeCh chan bool
+    }
     public static byte MinPacketLength = 9;
     public static int MaxPacketLength = 1 << 31;
 
@@ -34,23 +50,6 @@ public static class G
     public static int ChanSize = 16;
 }
 
-public struct Session
-{
-    public mux.Transport t;
-
-    // chans chanList
-
-    public codec.Encoder enc;
-    public codec.Decoder dec;
-
-    // TODO @stevemurr: this is a chan
-    public mux.Channel inbox;
-
-    public errors.Error? error;
-
-    // errCond sync.Cond
-    // closeCh chan bool
-}
 
 // Session is a bi-directional channel muxing session on a given transport.
 // type Session struct {

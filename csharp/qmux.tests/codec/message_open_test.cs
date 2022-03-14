@@ -9,7 +9,7 @@ public class TestOpenMessage
     [Fact]
     public void Test_OpenMessage_MarshalUnmarshalMuxRoundtrip()
     {
-        var msg1 = new OpenMessage()
+        var msg1 = new codec.OpenMessage()
         {
             SenderId = 10,
             WindowSize = 10,
@@ -17,7 +17,7 @@ public class TestOpenMessage
         };
 
         var marshaled = msg1.MarshalMux();
-        var msg2 = new OpenMessage();
+        var msg2 = new codec.OpenMessage();
         msg2.UnmarshalMux(marshaled);
         Assert.Equal(msg1.SenderId, msg2.SenderId);
         Assert.Equal(msg1.WindowSize, msg2.WindowSize);
