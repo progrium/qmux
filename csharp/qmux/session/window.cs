@@ -1,3 +1,3 @@
 namespace qmux.session;
 
-public interface Window { }
+public interface IWindow { }

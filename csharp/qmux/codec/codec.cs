@@ -20,12 +20,12 @@ public static class G
     public static io.IWriter? DebugBytes;
     public static (byte[], errors.Error?) Marshal(object v)
     {
-        if (!(v.GetType() == typeof(Marshaler)))
+        if (!(v.GetType() == typeof(IMarshaler)))
         {
-            return (new byte[] { }, new errors.Error($"{ErrorMessages.MarshalObjectFailed} was={v.GetType()} expected={typeof(Marshaler)}"));
+            return (new byte[] { }, new errors.Error($"{ErrorMessages.MarshalObjectFailed} was={v.GetType()} expected={typeof(IMarshaler)}"));
         }
 
-        var m = v as Marshaler;
+        var m = v as IMarshaler;
         if (m == null)
         {
             return (new byte[] { }, new errors.Error(ErrorMessages.ObjectAsMarshalerFailed));
@@ -34,11 +34,11 @@ public static class G
     }
     public static errors.Error? Unmarshal(byte[] b, object v)
     {
-        if (!(v.GetType() == typeof(Unmarshaler)))
+        if (!(v.GetType() == typeof(IUnmarshaler)))
         {
-            return new errors.Error($"{ErrorMessages.UnmarshalObjectFailed} was={v.GetType()} expected={typeof(Unmarshaler)}");
+            return new errors.Error($"{ErrorMessages.UnmarshalObjectFailed} was={v.GetType()} expected={typeof(IUnmarshaler)}");
         }
-        var u = v as Unmarshaler;
+        var u = v as IUnmarshaler;
         if (u == null)
         {
             return new errors.Error($"{ErrorMessages.UnmarshalUnsupportedField} for value={v.GetType()}");
@@ -150,12 +150,12 @@ public static class G
     }
 }
 
-public interface Marshaler
+public interface IMarshaler
 {
     public (byte[], errors.Error?) MarshalMux();
 }
 
-public interface Unmarshaler
+public interface IUnmarshaler
 {
     public errors.Error? UnmarshalMux(byte[] b);
 }

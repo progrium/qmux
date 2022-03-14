@@ -1,7 +1,7 @@
 namespace qmux.session;
 
-using errors = gostdlib.errors;
 using codec = qmux.codec;
+using errors = gostdlib.errors;
 using mux = qmux.mux;
 
 public enum ChannelDirection : byte

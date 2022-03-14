@@ -16,7 +16,7 @@ public struct Channel
     // TODO @stevemurr: establish equivalent chan pattern 
     public codec.Message message;
     public bool sentOEF;
-    public Window remoteWin;
+    public IWindow remoteWin;
     // TODO @stevemurr: what type is *buffer
     // pending* buffer
 
