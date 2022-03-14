@@ -1,22 +1,22 @@
 namespace qmux.mux;
-
+using gostdlib.errors;
 public static partial class mux
 {
     public interface IChannel
     {
         // Read reads up to len(data) bytes from the channel.
-        public int Read(byte[] data);
+        public (int, errors.Error?) Read(byte[] data);
 
         // Write writes len(data) bytes to the channel.
-        public int Write(byte[] data);
+        public (int, errors.Error?) Write(byte[] data);
 
         // Close signals end of channel use. No data may be sent after this
         // call.
-        public void Close();
+        public errors.Error? Close();
 
         // CloseWrite signals the end of sending data.
         // The other side may still send data
-        public void CloseWrite();
+        public errors.Error? CloseWrite();
 
         // ID returns the unique identifier of this channel
         // within the session
