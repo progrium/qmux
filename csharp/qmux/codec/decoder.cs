@@ -8,22 +8,22 @@ using io = gostdlib.io;
 public class Decoder
 {
     private Mutex mutex = new Mutex();
-    public io.IReader? R;
+    private io.IReader? r;
 
     public Decoder(io.IReader r)
     {
-        this.R = r;
+        this.r = r;
     }
 
     public (Message?, errors.Error?) Decode()
     {
         this.mutex.WaitOne();
-        if (this.R == null)
+        if (this.r == null)
         {
             System.Environment.FailFast("reader shouldnt be null");
         }
 
-        var (packet, err) = G.ReadPacket(this.R);
+        var (packet, err) = G.ReadPacket(this.r);
         if (err != null)
         {
             return (null, err);

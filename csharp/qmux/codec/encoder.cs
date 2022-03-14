@@ -8,11 +8,11 @@ using io = gostdlib.io;
 public class Encoder
 {
     private Mutex mutex = new Mutex();
-    public io.IWriter W;
+    public io.IWriter w;
 
     public Encoder(io.IWriter w)
     {
-        this.W = w;
+        this.w = w;
     }
 
     public errors.Error? Encode(object msg)
@@ -30,7 +30,7 @@ public class Encoder
             return err;
         }
 
-        var _ = this.W.Write(b);
+        var _ = this.w.Write(b);
         if (G.DebugBytes != null)
         {
             var debugBytes = Encoding.UTF8.GetBytes("<<ENC" + b);
