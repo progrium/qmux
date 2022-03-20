@@ -1,38 +1,23 @@
 namespace qmux.session;
 
-using qmux.codec;
-using qmux.mux;
+using channels = System.Threading.Channels;
+using codec = qmux.codec;
+using mux = qmux.mux;
 using gostdlib.errors;
 
-public static partial class session
+public enum ChannelDirection : byte
 {
-    public enum ChannelDirection : byte
-    {
-        Inbound = 0,
-        Outbound
-    }
+    Inbound = 0,
+    Outbound
+}
 
-    internal static class ErrorMesasges
-    {
-        public static string RemoteSideWroteTooMuch = "qmux: remote side wrote too much";
-    }
-    public struct Session
-    {
-        public mux.ITransport t;
+internal static class ErrorMesasges
+{
+    public static string RemoteSideWroteTooMuch = "qmux: remote side wrote too much";
+}
 
-        // chans chanList
-
-        public codec.Encoder enc;
-        public codec.Decoder dec;
-
-        // TODO @stevemurr: this is a chan
-        public mux.IChannel inbox;
-
-        public errors.Error? error;
-
-        // errCond sync.Cond
-        // closeCh chan bool
-    }
+public static class Constants
+{
     public static byte MinPacketLength = 9;
     public static int MaxPacketLength = 1 << 31;
 
@@ -48,6 +33,24 @@ public static partial class session
     // primarily for testing: setting chanSize=0 uncovers deadlocks more
     // quickly.
     public static int ChanSize = 16;
+}
+
+public struct Session
+{
+    public mux.ITransport t;
+
+    // chans chanList
+    public IList<channels.Channel<codec.IMessage>> chans;
+
+    public codec.Encoder enc;
+    public codec.Decoder dec;
+
+    // TODO @stevemurr: this is a chan
+    public channels.Channel<mux.IChannel> inbox;
+    public errors.Error? error;
+    public channels.Channel<bool> closeCh;
+    // errCond sync.Cond
+    // closeCh chan bool
 }
 
 
