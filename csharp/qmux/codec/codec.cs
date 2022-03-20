@@ -1,31 +1,28 @@
 namespace qmux.codec;
 
+using System.IO;
 using System.Text;
 using gostdlib.errors;
 using gostdlib.io;
 
-public static partial class codec
+internal static class ErrorMessages
 {
-    internal static class ErrorMessages
-    {
-        public static string MarshalObjectFailed = "marshal object failed";
-        public static string UnmarshalObjectFailed = "unmarshal object failed";
-        public static string ObjectAsMarshalerFailed = "object v failed to cast to type Marshaler";
-        public static string UnmarshalUnsupportedField = "unmarshal unsupported filed";
-        public static string DecodeFailedByteArrayEmpty = "decode failed: byte array is empty: expected MessageType in first byte";
-        public static string UnexpectedMessageType = "unexpected MessageType passed to Decode";
-    }
-    public interface IMarshaler
-    {
-        public (byte[], errors.Error?) MarshalMux();
-    }
+    public static string MarshalObjectFailed = "marshal object failed";
+    public static string UnmarshalObjectFailed = "unmarshal object failed";
+    public static string CastToIMarshalerFailed = "failed to cast object v to type Marshaler";
+    public static string UnmarshalUnsupportedField = "unsupported field during unmarshal";
+    public static string DecodeFailedByteArrayEmpty = "decode failed: byte array is empty: expected MessageType in first byte";
+    public static string UnexpectedMessageType = "unexpected MessageType passed to Decode";
+}
 
-    public interface IUnmarshaler
-    {
-        public errors.Error? UnmarshalMux(byte[] b);
-    }
-    public static io.IWriter? DebugMessages;
-    public static io.IWriter? DebugBytes;
+internal static class Debug
+{
+    public static io.IWriter? Messages;
+    public static io.IWriter? Bytes;
+}
+
+public static class Marshaler
+{
     public static (byte[], errors.Error?) Marshal(object v)
     {
         if (!(v.GetType() == typeof(IMarshaler)))
@@ -36,7 +33,7 @@ public static partial class codec
         var m = v as IMarshaler;
         if (m == null)
         {
-            return (new byte[] { }, new errors.Error(ErrorMessages.ObjectAsMarshalerFailed));
+            return (new byte[] { }, new errors.Error(ErrorMessages.CastToIMarshalerFailed));
         }
         return m.MarshalMux();
     }
@@ -96,10 +93,10 @@ public static partial class codec
             return (null, err);
         }
 
-        if (DebugMessages != null)
+        if (Debug.Messages != null)
         {
             var debugBytes = Encoding.UTF8.GetBytes($"<<DEC {msg}");
-            DebugMessages.Write(debugBytes);
+            Debug.Messages.Write(debugBytes);
         }
         return (msg, null);
     }
@@ -156,4 +153,15 @@ public static partial class codec
         }
         return (packet, null);
     }
+}
+
+
+public interface IMarshaler
+{
+    public (byte[], errors.Error?) MarshalMux();
+}
+
+public interface IUnmarshaler
+{
+    public errors.Error? UnmarshalMux(byte[] b);
 }

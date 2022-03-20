@@ -1,48 +1,50 @@
 namespace qmux.codec;
 
+using System.IO;
 using System.Text;
 
-
-public static partial class codec
+public class EofMessage : IMessage
 {
-    public struct EofMessage : IMessage
+    private nuint channelId;
+    public EofMessage() { }
+    public EofMessage(nuint channelId)
     {
-        public UInt32 ChannelId;
-        public string String()
-        {
-            return $"EofMessage ChannelId:{this.ChannelId}";
-        }
+        this.channelId = channelId;
+    }
+    public string String()
+    {
+        return $"EofMessage ChannelId:{this.channelId}";
+    }
 
-        public (UInt32, bool) Channel()
-        {
-            return (this.ChannelId, true);
-        }
+    public (nuint, bool) Channel()
+    {
+        return (this.channelId, true);
+    }
 
-        public byte[] MarshalMux()
+    public byte[] MarshalMux()
+    {
+        // 4 + 1
+        var bufferSize = (int)PayloadSizes.MessageChannelEOF + 1;
+        var stream = new MemoryStream(new byte[bufferSize]);
+        using (var writer = new BinaryWriter(stream, Encoding.BigEndianUnicode, false))
         {
-            // 4 + 1
-            var bufferSize = (int)PayloadSizes.MessageChannelEOF + 1;
-            var stream = new MemoryStream(new byte[bufferSize]);
-            using (var writer = new BinaryWriter(stream, Encoding.BigEndianUnicode, false))
-            {
-                // 0
-                writer.Write((byte)MessageType.MessageChannelEOF);
-                // 1-5
-                writer.Write(this.ChannelId);
-            }
-            return stream.ToArray();
+            // 0
+            writer.Write((byte)MessageType.MessageChannelEOF);
+            // 1-5
+            writer.Write(this.channelId);
         }
+        return stream.ToArray();
+    }
 
-        public void UnmarshalMux(byte[] b)
+    public void UnmarshalMux(byte[] b)
+    {
+        var stream = new MemoryStream(b);
+        using (var reader = new BinaryReader(stream, Encoding.BigEndianUnicode))
         {
-            var stream = new MemoryStream(b);
-            using (var reader = new BinaryReader(stream, Encoding.BigEndianUnicode))
-            {
-                // 0
-                reader.ReadByte();
-                // 1-5
-                this.ChannelId = reader.ReadUInt32();
-            }
+            // 0
+            reader.ReadByte();
+            // 1-5
+            this.channelId = reader.ReadUInt32();
         }
     }
 }
