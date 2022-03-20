@@ -2,10 +2,23 @@ namespace qmux.mux;
 
 using gostdlib.errors;
 
-public partial class mux
+public interface IWaiter
 {
-    public interface IWaiter
+    public errors.Error? Wait();
+}
+public static class Waiter
+{
+    // Wait blocks until the session transport has shut down, and returns the
+    // error causing the shutdown.
+    public static errors.Error? Wait(ISession sess)
     {
-        public errors.Error? Wait();
+        var w = sess as IWaiter;
+        if (w == null)
+        {
+            return new errors.Error(ErrorMessages.SessionDoesNotSupportWaiting);
+        }
+
+        return w.Wait();
     }
 }
+
