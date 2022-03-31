@@ -1,3 +1,7 @@
 TODO
 typescript/dist 
 demos/groktunnel/groktunnel
+
+**/*/bin
+**/*/obj
+**/*/.DS_Store
